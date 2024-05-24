@@ -1,0 +1,30 @@
+{
+  "name": "geschwind",
+  "version": "0.0.1",
+  "description": "A lightweight RPC implementation",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "tsc && node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/qvistdev09/geschwind.git"
+  },
+  "keywords": [
+    "rpc"
+  ],
+  "author": "Oscar Lindqvist",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/qvistdev09/geschwind/issues"
+  },
+  "homepage": "https://github.com/qvistdev09/geschwind#readme",
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  },
+  "files": [
+    "dist/**/*",
+    "!dist/tests/**/*"
+  ]
+}
