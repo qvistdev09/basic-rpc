@@ -9,7 +9,7 @@ export class RpcServer<T extends AppComposition> {
     this.server = http.createServer((req, res) => {
       this.handle(req, res).catch((err) => {
         console.log(err);
-        res.writeHead(500).end();
+        res.writeHead(500).end(JSON.stringify({ message: "Server error" }));
       });
     });
   }

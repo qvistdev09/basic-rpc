@@ -1,5 +1,6 @@
 import { Procedure } from "./server/procedure.js";
 import { IncomingMessage } from "http";
+import { RpcServer } from "./server/rpc-server.js";
 
 export type ProcedureReturn<ReturnData> =
   | { data: ReturnData; status: number }
@@ -49,3 +50,18 @@ export type ProcedureConfig<
 export type AppComposition = { [key: string]: Procedure<any, any, any, any> | undefined };
 
 export type Authenticator<User> = (token: string | null) => Promise<User | null>;
+
+export type InferredClient<T extends RpcServer<any>> = T extends RpcServer<infer TS>
+  ? { [Key in keyof TS]: RemoteProcedure<TS[Key]> }
+  : never;
+
+export type RemoteProcedure<T> = T extends Procedure<
+  infer ClientPayload,
+  infer ReturnData,
+  any,
+  any
+>
+  ? ClientPayload extends undefined
+    ? () => Promise<ReturnData>
+    : (payload: ClientPayload) => Promise<ReturnData>
+  : never;
