@@ -3,8 +3,11 @@
   "version": "0.0.1",
   "description": "A lightweight RPC implementation",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
-    "test": "tsc && node --test"
+    "test": "tsc && node --test",
+    "build": "tsc",
+    "watch": "tsc --watch"
   },
   "repository": {
     "type": "git",
