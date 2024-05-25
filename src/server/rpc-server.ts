@@ -66,13 +66,35 @@ export class RpcServer<T extends AppComposition> {
       return res.writeHead(400).end(JSON.stringify({ message: "Procedure does not exist" }));
     }
 
-    const validation = procedure.validator(payload);
+    let user: any;
+    let validatedPayload: any;
 
-    if (!validation.valid) {
-      return res.writeHead(400).end(JSON.stringify(validation.errors));
+    if (procedure.authentication && procedure.authentication.require) {
+      user = await procedure.authentication.authenticator(req.headers["authorization"] ?? null);
+      if (user === null) {
+        return res.writeHead(401).end(
+          JSON.stringify({
+            message: "This procedure is only for authenticated users",
+          })
+        );
+      }
     }
 
-    const output = await procedure.mainFunction({}, validation.data);
+    if (procedure.authentication) {
+      user = await procedure.authentication.authenticator(req.headers["authorization"] ?? null);
+    }
+
+    if (procedure.validator) {
+      const validationResult = procedure.validator(payload);
+      if (!validationResult.valid) {
+        return res.writeHead(400).end(JSON.stringify(validationResult.errors));
+      }
+      validatedPayload = validationResult.data;
+    }
+
+    const context = { req, user };
+
+    const output = await procedure.procedure(context, validatedPayload);
 
     if ("data" in output) {
       return res.writeHead(output.status).end(JSON.stringify(output.data));
