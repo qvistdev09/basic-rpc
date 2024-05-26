@@ -1,6 +1,7 @@
 import { Procedure } from "./server/procedure.js";
 import { IncomingMessage } from "http";
 import { RpcServer } from "./server/rpc-server.js";
+import { RpcRequest, RpcResponse } from "./server/rpc-http.js";
 
 export type ProcedureReturn<ReturnData> =
   | { data: ReturnData; status: number }
@@ -65,3 +66,9 @@ export type RemoteProcedure<T> = T extends Procedure<
     ? () => ReturnData extends undefined ? never : Promise<ReturnData>
     : (payload: ClientPayload) => ReturnData extends undefined ? never : Promise<ReturnData>
   : never;
+
+export type Middleware = (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>;
+
+export type Next = (err?: any) => Promise<void>;
+
+export type ErrorHandler = (req: RpcRequest, res: RpcResponse, err: any) => void;
