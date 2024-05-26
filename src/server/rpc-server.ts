@@ -16,7 +16,7 @@ export class RpcServer<T extends AppComposition> {
 
   public listen(port: number) {
     this.server.listen(port, () => {
-      console.log(`[Geschwind] RPC server is listening on http://localhost:${port}`);
+      console.log(`[basic-rpc] RPC server is listening on http://localhost:${port}`);
     });
   }
 
