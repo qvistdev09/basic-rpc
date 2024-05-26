@@ -61,7 +61,7 @@ export type RemoteProcedure<T> = T extends Procedure<
   any,
   any
 >
-  ? ClientPayload extends undefined
-    ? () => Promise<ReturnData>
-    : (payload: ClientPayload) => Promise<ReturnData>
+  ? ClientPayload extends unknown
+    ? () => ReturnData extends undefined ? never : Promise<ReturnData>
+    : (payload: ClientPayload) => ReturnData extends undefined ? never : Promise<ReturnData>
   : never;
