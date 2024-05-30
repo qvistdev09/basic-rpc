@@ -1,5 +1,5 @@
 import http, { IncomingMessage, ServerResponse, Server } from "http";
-import { AppComposition, ErrorHandler, Middleware, Next } from "../types.js";
+import { AppComposition, ErrorMiddleware, Middleware, Next } from "../types.js";
 import { RpcRequest, RpcResponse } from "./rpc-http.js";
 import {
   validateMethod,
@@ -11,13 +11,9 @@ import {
   authenticate,
   validatePayload,
   runProcedure,
+  defaultErrorHandler,
 } from "./core-middleware.js";
-
-const bold = "\x1b[1m";
-const reset = "\x1b[0m";
-const underline = "\x1b[4m";
-const red = "\x1b[31m";
-const blue = "\x1b[34m";
+import { bold, reset, blue, underline } from "./console.js";
 
 export class RpcServer<T extends AppComposition> {
   private endpoint: string = "/api/procedures";
@@ -34,12 +30,20 @@ export class RpcServer<T extends AppComposition> {
     runProcedure,
   ];
 
+  private errorMiddlewares: ErrorMiddleware[] = [defaultErrorHandler];
+  private customErrorMiddlewares: ErrorMiddleware[] = [];
+
   public readonly server: Server;
 
   constructor(private app: T) {
     this.server = http.createServer((req, res) => {
       this.runMiddlewares(req, res);
     });
+  }
+
+  public addErrorMiddleware(middleware: ErrorMiddleware) {
+    this.customErrorMiddlewares.push(middleware);
+    return this;
   }
 
   private log(message: string) {
@@ -54,26 +58,42 @@ export class RpcServer<T extends AppComposition> {
 
     const next: Next = async (err) => {
       if (err) {
-        return this.errorHandler(rpcReq, rpcRes, err);
+        return this.runErrorMiddlewares(err, rpcReq, rpcRes);
       }
 
-      const middleware = this.middlewares[index];
+      const errorMiddleware = this.middlewares[index];
       index++;
 
       try {
-        await middleware(rpcReq, rpcRes, next);
+        await errorMiddleware(rpcReq, rpcRes, next);
       } catch (err) {
-        this.errorHandler(rpcReq, rpcRes, err);
+        defaultErrorHandler(err, rpcReq, rpcRes, undefined as any);
       }
     };
 
     next();
   }
 
-  private errorHandler: ErrorHandler = (req, res, err) => {
-    console.log(err);
-    res.status(500).message(JSON.stringify("Server error"));
-  };
+  private runErrorMiddlewares(err: any, req: RpcRequest, res: RpcResponse) {
+    let index = 0;
+
+    const errorMiddlewares =
+      this.customErrorMiddlewares.length > 0 ? this.customErrorMiddlewares : this.errorMiddlewares;
+
+    const next: Next = async (err) => {
+      const middleware = errorMiddlewares[index];
+      index++;
+
+      try {
+        await middleware(err, req, res, next);
+      } catch (err) {
+        console.log(err);
+        res.status(500).message("Server error");
+      }
+    };
+
+    next();
+  }
 
   private logStartupInfo() {
     this.log("Starting server");

@@ -1,10 +1,20 @@
-import { AppComposition, Middleware } from "../types.js";
+import { AppComposition, ErrorMiddleware, Middleware } from "../types.js";
 import { getClientJson, getMeta } from "./utils.js";
-import { MissingProcedure, MissingProcedureName } from "./errors.js";
+import {
+  AuthenticationRequired,
+  FailedPayloadValidation,
+  InvalidContentType,
+  InvalidHttpMethod,
+  InvalidPayloadStructure,
+  InvalidUrl,
+  MissingProcedure,
+  MissingProcedureName,
+  ProcedureDoesNotExist,
+} from "./errors.js";
 
 export const validateMethod: Middleware = async (req, res, next) => {
   if (req.getMethod() !== "POST") {
-    return res.status(405).message("Only post requests are allowed");
+    return next(new InvalidHttpMethod());
   }
   next();
 };
@@ -16,7 +26,7 @@ export const validateEndpoint =
     const requestUrl = req.getUrl();
 
     if (!requestUrl || requestUrl !== endpoint) {
-      return res.status(404).message(`Requests must be posted to '${endpoint}'`);
+      return next(new InvalidUrl(`Requests must be posted to '${endpoint}'`));
     }
 
     next();
@@ -24,7 +34,7 @@ export const validateEndpoint =
 
 export const validateContentType: Middleware = async (req, res, next) => {
   if (req.getContentType() !== "application/json") {
-    return res.status(415).message("Only content-type 'application/json' is allowed");
+    return next(new InvalidContentType());
   }
   next();
 };
@@ -38,11 +48,7 @@ export const validateMeta: Middleware = async (req, res, next) => {
   const meta = getMeta(req.body);
 
   if (!meta.valid) {
-    return res
-      .status(400)
-      .message(
-        "Request body is not structured correctly. It should contain 'procedure' and 'payload'"
-      );
+    return next(new InvalidPayloadStructure());
   }
 
   req.procedureName = meta.procedureName;
@@ -55,13 +61,13 @@ export const validateProcedure =
   (app: AppComposition): Middleware =>
   async (req, res, next) => {
     if (!req.procedureName) {
-      throw new MissingProcedureName();
+      return next(new MissingProcedureName());
     }
 
     const procedure = app[req.procedureName];
 
     if (!procedure) {
-      return res.status(400).message("Procedure does not exist");
+      return next(new ProcedureDoesNotExist());
     }
 
     req.procedure = procedure;
@@ -71,7 +77,7 @@ export const validateProcedure =
 
 export const authenticate: Middleware = async (req, res, next) => {
   if (!req.procedure) {
-    throw new MissingProcedure();
+    return next(new MissingProcedure());
   }
 
   if (!req.procedure.authentication) {
@@ -83,7 +89,7 @@ export const authenticate: Middleware = async (req, res, next) => {
   req.user = await authenticator(req.getHeader("authorization"));
 
   if (require && req.user === undefined) {
-    return res.status(401).message("This procedure is only for authenticated users");
+    return next(new AuthenticationRequired());
   }
 
   next();
@@ -91,15 +97,17 @@ export const authenticate: Middleware = async (req, res, next) => {
 
 export const validatePayload: Middleware = async (req, res, next) => {
   if (!req.procedure) {
-    throw new MissingProcedure();
+    return next(new MissingProcedure());
   }
 
-  if (req.procedure.validator) {
-    const validationResult = req.procedure.validator(req.payload);
+  if (!req.procedure.validator) {
+    return next();
+  }
 
-    if (!validationResult.valid) {
-      return res.status(400).json(validationResult.errors);
-    }
+  const validationResult = req.procedure.validator(req.payload);
+
+  if (!validationResult.valid) {
+    return next(new FailedPayloadValidation(validationResult.errors));
   }
 
   next();
@@ -107,7 +115,7 @@ export const validatePayload: Middleware = async (req, res, next) => {
 
 export const runProcedure: Middleware = async (req, res, next) => {
   if (!req.procedure) {
-    throw new MissingProcedure();
+    return next(new MissingProcedure());
   }
 
   const context =
@@ -120,4 +128,41 @@ export const runProcedure: Middleware = async (req, res, next) => {
   }
 
   res.status(output.status).message(output.message);
+};
+
+export const defaultErrorHandler: ErrorMiddleware = async (err, req, res, next) => {
+  if (err instanceof InvalidHttpMethod) {
+    return res.status(405).message("Only post requests are allowed");
+  }
+
+  if (err instanceof InvalidUrl) {
+    return res.status(404).message(err.invalidUrlMessage);
+  }
+
+  if (err instanceof InvalidContentType) {
+    return res.status(415).message("Only content-type 'application/json' is allowed");
+  }
+
+  if (err instanceof InvalidPayloadStructure) {
+    return res
+      .status(400)
+      .message(
+        "Request body is not structured correctly. It should contain 'procedure' and 'payload'"
+      );
+  }
+
+  if (err instanceof ProcedureDoesNotExist) {
+    return res.status(400).message("Procedure does not exist");
+  }
+
+  if (err instanceof AuthenticationRequired) {
+    return res.status(401).message("This procedure is only for authenticated users");
+  }
+
+  if (err instanceof FailedPayloadValidation) {
+    return res.status(400).json(err.validationErrors);
+  }
+
+  console.log(err);
+  res.status(500).message(JSON.stringify("Server error"));
 };

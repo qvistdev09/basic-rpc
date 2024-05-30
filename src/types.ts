@@ -69,6 +69,11 @@ export type RemoteProcedure<T> = T extends Procedure<
 
 export type Middleware = (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>;
 
-export type Next = (err?: any) => Promise<void>;
+export type ErrorMiddleware = (
+  err: any,
+  req: RpcRequest,
+  res: RpcResponse,
+  next: Next
+) => Promise<void>;
 
-export type ErrorHandler = (req: RpcRequest, res: RpcResponse, err: any) => void;
+export type Next = (err?: any) => Promise<void>;
