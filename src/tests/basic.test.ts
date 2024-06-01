@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 await test("happy path, no payload", async () => {
   const mockServer = new MockServer();
 
-  new RpcServer(
+  const testServer = new RpcServer(
     {
       helloWorld: createProcedure({
         async procedure(ctx, payload) {
@@ -27,6 +27,8 @@ await test("happy path, no payload", async () => {
 
   const mockRes = new MockRes();
 
+  testServer.listen(3000);
+
   mockServer.emitMockHttpRequest(mockReq, mockRes);
 
   await mockRes.waitForResponse();
@@ -35,3 +37,5 @@ await test("happy path, no payload", async () => {
   assert.equal(mockRes.status, 200);
   assert.equal(mockRes.headers["content-type"], "application/json");
 });
+
+process.exit(0);

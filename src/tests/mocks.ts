@@ -1,4 +1,5 @@
 import http, { IncomingMessage, ServerResponse } from "http";
+import { blue, reset } from "../server/console.js";
 
 export class MockReq {
   private chunkListener: ((chunk: Buffer) => void) | undefined;
@@ -94,10 +95,10 @@ export class MockRes {
 
 export class MockServer {
   private requestListener: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
-  private port: number | null = null;
+  public port: number | null = null;
 
   private log(message: string) {
-    console.log(`[Mock Server] ${message}`);
+    console.log(`${blue}[Mock Server]${reset} ${message}`);
   }
 
   public on(event: string, callback: (req: IncomingMessage, res: ServerResponse) => void) {

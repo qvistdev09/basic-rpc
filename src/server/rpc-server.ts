@@ -113,7 +113,7 @@ export class RpcServer<T extends AppComposition> {
   public listen(port: number) {
     this.logStartupInfo();
     this.server.listen(port, () => {
-      this.log("RPC server is listening on http://localhost:${port}");
+      this.log(`RPC server is listening on http://localhost:${port}`);
     });
   }
 }
