@@ -76,4 +76,4 @@ export type ErrorMiddleware = (
   next: Next
 ) => Promise<void>;
 
-export type Next = (err?: any) => Promise<void>;
+export type Next = (err?: any) => void;

@@ -57,19 +57,17 @@ export class RpcServer<T extends AppComposition> {
     const rpcReq = new RpcRequest(req);
     const rpcRes = new RpcResponse(res);
 
-    const next: Next = async (err) => {
+    const next: Next = (err) => {
       if (err) {
         return this.runErrorMiddlewares(err, rpcReq, rpcRes);
       }
 
-      const errorMiddleware = this.middlewares[index];
+      const middleware = this.middlewares[index];
       index++;
 
-      try {
-        await errorMiddleware(rpcReq, rpcRes, next);
-      } catch (err) {
-        defaultErrorHandler(err, rpcReq, rpcRes, undefined as any);
-      }
+      middleware(rpcReq, rpcRes, next).catch((err) => {
+        this.runErrorMiddlewares(err, rpcReq, rpcRes);
+      });
     };
 
     next();
@@ -81,19 +79,16 @@ export class RpcServer<T extends AppComposition> {
     const errorMiddlewares =
       this.customErrorMiddlewares.length > 0 ? this.customErrorMiddlewares : this.errorMiddlewares;
 
-    const next: Next = async (err) => {
-      const middleware = errorMiddlewares[index];
+    const next: Next = (err) => {
+      const errorMiddleware = errorMiddlewares[index];
       index++;
 
-      try {
-        await middleware(err, req, res, next);
-      } catch (err) {
-        console.log(err);
+      errorMiddleware(err, req, res, next).catch(() => {
         res.status(500).message("Server error");
-      }
+      });
     };
 
-    next();
+    next(err);
   }
 
   private logStartupInfo() {
