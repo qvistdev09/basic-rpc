@@ -35,8 +35,9 @@ export class RpcServer<T extends AppComposition> {
 
   public readonly server: Server;
 
-  constructor(private app: T) {
-    this.server = http.createServer((req, res) => {
+  constructor(private app: T, server?: Server) {
+    this.server = server ?? http.createServer();
+    this.server.on("request", (req, res) => {
       this.runMiddlewares(req, res);
     });
   }
