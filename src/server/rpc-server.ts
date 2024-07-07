@@ -17,6 +17,7 @@ import { bold, reset, blue, underline } from "./console.js";
 
 export class RpcServer<T extends AppComposition> {
   private endpoint: string = "/api/procedures";
+  private protocol: string = "http";
 
   private middlewares: Middleware[] = [
     validateMethod,
@@ -42,6 +43,11 @@ export class RpcServer<T extends AppComposition> {
     });
   }
 
+  public setProtocol(protocol: "http" | "https") {
+    this.protocol = protocol;
+    return this;
+  }
+
   public addErrorMiddleware(middleware: ErrorMiddleware) {
     this.customErrorMiddlewares.push(middleware);
     return this;
@@ -54,7 +60,7 @@ export class RpcServer<T extends AppComposition> {
   private runMiddlewares(req: IncomingMessage, res: ServerResponse) {
     let index = 0;
 
-    const rpcReq = new RpcRequest(req);
+    const rpcReq = new RpcRequest(req, this.protocol);
     const rpcRes = new RpcResponse(res);
 
     const next: Next = (err) => {

@@ -1,5 +1,6 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Procedure } from "./procedure.js";
+import { URL } from "url";
 
 export class RpcRequest {
   public body: unknown | undefined;
@@ -7,7 +8,14 @@ export class RpcRequest {
   public procedureName: string | undefined;
   public payload: unknown | undefined;
   public user: unknown | undefined;
-  constructor(public httpReq: IncomingMessage) {}
+  public query: Record<string, string | undefined> = {};
+
+  constructor(public httpReq: IncomingMessage, protocol: string) {
+    const url = new URL(httpReq.url ?? "", `${protocol}://${httpReq.headers.host ?? ""}`);
+    url.searchParams.forEach((value, name) => {
+      this.query[name] = value;
+    });
+  }
 
   public getContentType() {
     return this.httpReq.headers["content-type"];
