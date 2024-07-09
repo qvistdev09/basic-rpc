@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { Procedure } from "./procedure.js";
 import { URL } from "url";
+import { Procedure } from "./procedure.js";
+import { ProcedureReturn } from "../types.js";
 
 export class RpcRequest {
   public body: unknown | undefined;
@@ -22,7 +23,7 @@ export class RpcRequest {
   }
 
   public getMethod() {
-    return this.httpReq.method;
+    return (this.httpReq.method ?? "").toUpperCase();
   }
 
   public getUrl() {
@@ -42,6 +43,7 @@ export class RpcRequest {
 
 export class RpcResponse {
   private statusCode: number = 200;
+  public responseData: ProcedureReturn<any> | null = null;
 
   constructor(public httpRes: ServerResponse) {
     this.httpRes.setHeader("content-type", "application/json");

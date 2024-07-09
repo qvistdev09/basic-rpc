@@ -1,1 +1,2 @@
-export { createProcedure, createRpcServer } from "./utils.js";
+export { createProcedure } from "./utils.js";
+export { createRpcServer } from "./rpc-server.js";

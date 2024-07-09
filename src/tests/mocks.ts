@@ -124,7 +124,3 @@ export class MockServer {
     this.requestListener(req as unknown as IncomingMessage, res as unknown as ServerResponse);
   }
 }
-
-const server = http.createServer();
-
-server.on("request", (req, res) => {});

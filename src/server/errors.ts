@@ -23,3 +23,5 @@ export class FailedPayloadValidation extends Error {
     super();
   }
 }
+
+export class NoProcedureResponse extends Error {}

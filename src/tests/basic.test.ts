@@ -1,28 +1,30 @@
 import { test } from "node:test";
 import { Server } from "http";
-import { RpcServer } from "../server/rpc-server.js";
 import { createProcedure } from "../server/utils.js";
 import { MockReq, MockRes, MockServer } from "./mocks.js";
 import assert from "node:assert/strict";
+import { createRpcServer } from "../server/rpc-server.js";
 
-await test("happy path, no payload", async () => {
+test("happy path, no payload", async () => {
   const mockServer = new MockServer();
 
-  const testServer = new RpcServer(
-    {
-      helloWorld: createProcedure({
-        async procedure(ctx, payload) {
-          return { status: 200, data: { message: "Hello world" } };
-        },
-      }),
-    },
-    mockServer as unknown as Server
-  );
+  const procedures = {
+    helloWorld: createProcedure({
+      async procedure() {
+        return { status: 200, data: { message: "Hello world" } };
+      },
+    }),
+  };
+
+  const testServer = createRpcServer(procedures, mockServer as unknown as Server);
+
+  testServer.addRpcMiddleware().addSendRpcResponse();
 
   const mockReq = new MockReq()
     .setMethod("POST")
     .setUrl("/api/procedures")
     .setHeader("content-type", "application/json")
+    .setHeader("host", "localhost")
     .setBody(JSON.stringify({ procedure: "helloWorld", payload: null }));
 
   const mockRes = new MockRes();
@@ -37,5 +39,3 @@ await test("happy path, no payload", async () => {
   assert.equal(mockRes.status, 200);
   assert.equal(mockRes.headers["content-type"], "application/json");
 });
-
-process.exit(0);

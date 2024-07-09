@@ -1,7 +1,6 @@
 import { IncomingMessage } from "http";
-import { AppComposition, ProcedureConfig } from "../types.js";
+import { ProcedureConfig } from "../types.js";
 import { Procedure } from "./procedure.js";
-import { RpcServer } from "./rpc-server.js";
 
 export function getClientJson(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -52,8 +51,4 @@ export function createProcedure<
   config: ProcedureConfig<ClientPayload, ReturnData, User, AuthRequired>
 ): Procedure<ClientPayload, ReturnData, User, AuthRequired extends boolean ? AuthRequired : never> {
   return new Procedure(config.procedure, config.validator, config.authentication);
-}
-
-export function createRpcServer<T extends AppComposition>(app: T): RpcServer<T> {
-  return new RpcServer(app);
 }

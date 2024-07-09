@@ -9,6 +9,7 @@ import {
   InvalidUrl,
   MissingProcedure,
   MissingProcedureName,
+  NoProcedureResponse,
   ProcedureDoesNotExist,
 } from "./errors.js";
 
@@ -20,13 +21,12 @@ export const validateMethod: Middleware = async (req, res, next) => {
 };
 
 export const validateEndpoint =
-  (getEndpoint: () => string): Middleware =>
+  (rpcEndpoint: string): Middleware =>
   async (req, res, next) => {
-    const endpoint = getEndpoint();
     const requestUrl = req.getUrl();
 
-    if (!requestUrl || requestUrl !== endpoint) {
-      return next(new InvalidUrl(`Requests must be posted to '${endpoint}'`));
+    if (!requestUrl || requestUrl !== rpcEndpoint) {
+      return next(new InvalidUrl(`Requests must be posted to '${rpcEndpoint}'`));
     }
 
     next();
@@ -40,7 +40,9 @@ export const validateContentType: Middleware = async (req, res, next) => {
 };
 
 export const parseBody: Middleware = async (req, res, next) => {
-  req.body = await getClientJson(req.httpReq);
+  if (req.getContentType() === "application/json") {
+    req.body = await getClientJson(req.httpReq);
+  }
   next();
 };
 
@@ -121,13 +123,21 @@ export const runProcedure: Middleware = async (req, res, next) => {
   const context =
     req.user !== undefined ? { req: req.httpReq, user: req.user } : { req: req.httpReq };
 
-  const output = await req.procedure.procedure(context, req.payload);
+  res.responseData = await req.procedure.procedure(context, req.payload);
 
-  if ("data" in output) {
-    return res.status(output.status).json(output.data);
+  next();
+};
+
+export const sendProcedureResponse: Middleware = async (req, res, next) => {
+  if (!res.responseData) {
+    return next(new NoProcedureResponse());
   }
 
-  res.status(output.status).message(output.message);
+  if ("data" in res.responseData) {
+    return res.status(res.responseData.status).json(res.responseData.data);
+  }
+
+  res.status(res.responseData.status).message(res.responseData.message);
 };
 
 export const defaultErrorHandler: ErrorMiddleware = async (err, req, res, next) => {
