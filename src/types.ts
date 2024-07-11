@@ -56,6 +56,17 @@ export type InferredClient<T extends RpcServer<any>> = T extends RpcServer<infer
   ? { [Key in keyof TS]: RemoteProcedure<TS[Key]> }
   : never;
 
+type ClientParametersPayload<T> = {
+  payload: T;
+  headers?: Record<string, string>;
+  abortController?: AbortController;
+};
+
+type ClientParameters = {
+  headers?: Record<string, string>;
+  abortController?: AbortController;
+};
+
 export type RemoteProcedure<T> = T extends Procedure<
   infer ClientPayload,
   infer ReturnData,
@@ -63,8 +74,10 @@ export type RemoteProcedure<T> = T extends Procedure<
   any
 >
   ? ClientPayload extends object
-    ? (payload: ClientPayload) => ReturnData extends undefined ? never : Promise<ReturnData>
-    : () => ReturnData extends undefined ? never : Promise<ReturnData>
+    ? (
+        parameters: ClientParametersPayload<ClientPayload>
+      ) => ReturnData extends undefined ? never : Promise<ReturnData>
+    : (parameters?: ClientParameters) => ReturnData extends undefined ? never : Promise<ReturnData>
   : never;
 
 export type Middleware = (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>;

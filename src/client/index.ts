@@ -1,17 +1,18 @@
 import { RpcServer } from "../server/rpc-server.js";
 import { InferredClient } from "../types.js";
 
-export function createClient<T extends RpcServer<any>>(
-  rpcEndpoint: string,
-  tokenRetriever: () => Promise<string>
-) {
-  async function authenticatedFetch(procedure: string, payload: any) {
-    const token = await tokenRetriever();
-
+export function createClient<T extends RpcServer<any>>(rpcEndpoint: string) {
+  async function callRpc(
+    procedure: string,
+    payload: any,
+    headers?: Record<string, string>,
+    abortController?: AbortController
+  ) {
     const response = await fetch(rpcEndpoint, {
       method: "POST",
       body: JSON.stringify({ payload: payload ?? null, procedure }),
-      headers: { "content-type": "application/json", Authorization: token },
+      headers,
+      signal: abortController?.signal,
     });
 
     if (!response.ok) {
@@ -25,8 +26,15 @@ export function createClient<T extends RpcServer<any>>(
     {},
     {
       get: (target, procedure: string) => {
-        return (payload: any) => authenticatedFetch(procedure, payload);
+        return ({ payload, headers, abortController }: GenericParameters) =>
+          callRpc(procedure, payload, headers, abortController);
       },
     }
   ) as InferredClient<T>;
 }
+
+type GenericParameters = {
+  payload: any;
+  headers?: Record<string, string>;
+  abortController?: AbortController;
+};
