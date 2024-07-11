@@ -88,7 +88,7 @@ export const authenticate: Middleware = async (req, res, next) => {
 
   const { authenticator, require } = req.procedure.authentication;
 
-  req.user = await authenticator(req.getHeader("authorization"));
+  req.user = await authenticator(req.httpReq);
 
   if (require && req.user === undefined) {
     return next(new AuthenticationRequired());
