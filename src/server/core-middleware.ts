@@ -1,4 +1,4 @@
-import { AppComposition, ErrorMiddleware, Middleware } from "../types.js";
+import { AppComposition, ErrorHandler, Middleware } from "../types.js";
 import { getClientJson, getMeta } from "./utils.js";
 import {
   AuthenticationRequired,
@@ -140,7 +140,7 @@ export const sendProcedureResponse: Middleware = async (req, res, next) => {
   res.status(res.responseData.status).message(res.responseData.message);
 };
 
-export const defaultErrorHandler: ErrorMiddleware = async (err, req, res, next) => {
+export const defaultErrorHandler: ErrorHandler = async (err, req, res, next) => {
   if (err instanceof InvalidHttpMethod) {
     return res.status(405).message("Only post requests are allowed");
   }

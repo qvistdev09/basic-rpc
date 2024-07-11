@@ -1,4 +1,4 @@
-import http, { IncomingMessage, ServerResponse } from "http";
+import { IncomingMessage, ServerResponse } from "http";
 import { blue, reset } from "../server/console.js";
 
 export class MockReq {

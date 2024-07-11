@@ -1,6 +1,4 @@
 import { IncomingMessage } from "http";
-import { ProcedureConfig } from "../types.js";
-import { Procedure } from "./procedure.js";
 
 export function getClientJson(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -40,15 +38,4 @@ export function getMeta(
   }
 
   return { valid: false };
-}
-
-export function createProcedure<
-  ClientPayload,
-  ReturnData,
-  User = undefined,
-  AuthRequired extends boolean | undefined = undefined
->(
-  config: ProcedureConfig<ClientPayload, ReturnData, User, AuthRequired>
-): Procedure<ClientPayload, ReturnData, User, AuthRequired extends boolean ? AuthRequired : never> {
-  return new Procedure(config.procedure, config.validator, config.authentication);
 }

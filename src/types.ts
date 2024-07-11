@@ -1,7 +1,7 @@
 import { Procedure } from "./server/procedure.js";
 import { IncomingMessage } from "http";
-import { RpcServer } from "./server/rpc-server.js";
 import { RpcRequest, RpcResponse } from "./server/rpc-http.js";
+import { RpcServer } from "./server/rpc-server.js";
 
 export type ProcedureReturn<ReturnData> =
   | { data: ReturnData; status: number }
@@ -69,7 +69,7 @@ export type RemoteProcedure<T> = T extends Procedure<
 
 export type Middleware = (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>;
 
-export type ErrorMiddleware = (
+export type ErrorHandler = (
   err: any,
   req: RpcRequest,
   res: RpcResponse,

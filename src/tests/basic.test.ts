@@ -1,9 +1,8 @@
 import { test } from "node:test";
 import { Server } from "http";
-import { createProcedure } from "../server/utils.js";
-import { MockReq, MockRes, MockServer } from "./mocks.js";
 import assert from "node:assert/strict";
-import { createRpcServer } from "../server/rpc-server.js";
+import { MockReq, MockRes, MockServer } from "./mocks.js";
+import { createRpcServer, createProcedure } from "../index.js";
 
 test("happy path, no payload", async () => {
   const mockServer = new MockServer();
@@ -16,7 +15,7 @@ test("happy path, no payload", async () => {
     }),
   };
 
-  const testServer = createRpcServer(procedures, mockServer as unknown as Server);
+  const testServer = createRpcServer(procedures);
 
   testServer.addRpcMiddleware().addSendRpcResponse();
 
@@ -29,7 +28,7 @@ test("happy path, no payload", async () => {
 
   const mockRes = new MockRes();
 
-  testServer.listen(3000);
+  testServer.listen(3000, mockServer as unknown as Server);
 
   mockServer.emitMockHttpRequest(mockReq, mockRes);
 
