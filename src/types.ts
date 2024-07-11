@@ -62,9 +62,9 @@ export type RemoteProcedure<T> = T extends Procedure<
   any,
   any
 >
-  ? ClientPayload extends unknown
-    ? () => ReturnData extends undefined ? never : Promise<ReturnData>
-    : (payload: ClientPayload) => ReturnData extends undefined ? never : Promise<ReturnData>
+  ? ClientPayload extends object
+    ? (payload: ClientPayload) => ReturnData extends undefined ? never : Promise<ReturnData>
+    : () => ReturnData extends undefined ? never : Promise<ReturnData>
   : never;
 
 export type Middleware = (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>;
