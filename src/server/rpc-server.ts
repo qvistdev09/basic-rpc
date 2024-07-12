@@ -1,5 +1,5 @@
 import http, { Server } from "http";
-import { AppComposition, ErrorHandler, Middleware } from "../types";
+import { AppComposition, ErrorHandler, Middleware, Next } from "../types";
 import {
   authenticate,
   parseBody,
@@ -14,6 +14,7 @@ import {
 } from "./core-middleware.js";
 import { createRunner } from "./rpc-server.utils.js";
 import { logStartupInfo } from "./console.js";
+import { RpcRequest, RpcResponse } from "./rpc-http";
 
 export class RpcServer<T extends AppComposition> {
   private middlewares: Middleware[] = [parseBody];
@@ -25,7 +26,7 @@ export class RpcServer<T extends AppComposition> {
     this.procedures = procedures;
   }
 
-  addMiddleware(middleware: Middleware) {
+  addMiddleware(middleware: (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>) {
     this.middlewares.push(middleware);
     return this;
   }
