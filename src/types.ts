@@ -1,5 +1,5 @@
-import { Procedure } from "./server/procedure.js";
 import { IncomingMessage } from "http";
+import { Procedure } from "./server/procedure.js";
 import { RpcRequest, RpcResponse } from "./server/rpc-http.js";
 import { RpcServer } from "./server/rpc-server.js";
 

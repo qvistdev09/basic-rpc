@@ -1,5 +1,5 @@
 import http, { Server } from "http";
-import { AppComposition, ErrorHandler, Middleware, Next } from "../types";
+import { AppComposition, ErrorHandler, Middleware, Next } from "../types.js";
 import {
   authenticate,
   parseBody,
@@ -14,7 +14,7 @@ import {
 } from "./core-middleware.js";
 import { createRunner } from "./rpc-server.utils.js";
 import { logStartupInfo } from "./console.js";
-import { RpcRequest, RpcResponse } from "./rpc-http";
+import { RpcRequest, RpcResponse } from "./rpc-http.js";
 
 export class RpcServer<T extends AppComposition> {
   private middlewares: Middleware[] = [parseBody];
@@ -31,7 +31,9 @@ export class RpcServer<T extends AppComposition> {
     return this;
   }
 
-  addErrorHandler(errorHandler: ErrorHandler) {
+  addErrorHandler(
+    errorHandler: (err: any, req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>
+  ) {
     this.errorHandlers.push(errorHandler);
     return this;
   }
