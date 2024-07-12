@@ -11,7 +11,7 @@ export function createClient<T extends RpcServer<any>>(rpcEndpoint: string) {
     const response = await fetch(rpcEndpoint, {
       method: "POST",
       body: JSON.stringify({ payload: payload ?? null, procedure }),
-      headers,
+      headers: { ...(headers ?? {}), ["Content-Type"]: "application/json" },
       signal: abortController?.signal,
     });
 
