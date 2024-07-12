@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { MockReq, MockRes, MockServer } from "./mocks.js";
 import { createRpcServer, createProcedure } from "../index.js";
 
-test("happy path, no payload", async () => {
+test("basic: happy path with no payload", async () => {
   const mockServer = new MockServer();
 
   const procedures = {
