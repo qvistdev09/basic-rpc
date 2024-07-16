@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix checking only for null in authentication middleware
 - fix client parameters destructuring bug
 - set content-type automatically in client
 

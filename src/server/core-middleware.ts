@@ -90,7 +90,7 @@ export const authenticate: Middleware = async (req, res, next) => {
 
   req.user = await authenticator(req.httpReq);
 
-  if (require && req.user === undefined) {
+  if (require && !req.user) {
     return next(new AuthenticationRequired());
   }
 
