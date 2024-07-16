@@ -26,8 +26,8 @@ export function createClient<T extends RpcServer<any>>(rpcEndpoint: string) {
     {},
     {
       get: (target, procedure: string) => {
-        return ({ payload, headers, abortController }: GenericParameters) =>
-          callRpc(procedure, payload, headers, abortController);
+        return (parameters?: GenericParameters) =>
+          callRpc(procedure, parameters?.payload, parameters?.headers, parameters?.abortController);
       },
     }
   ) as InferredClient<T>;
