@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix client parameters destructuring bug
 - set content-type automatically in client
 
 ## 0.0.6
