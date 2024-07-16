@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 0.0.7
 
 - fix checking only for null in authentication middleware
 - fix client parameters destructuring bug
