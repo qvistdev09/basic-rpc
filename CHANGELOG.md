@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- add exports field to package.json
+
 ## 0.0.7
 
 - fix checking only for null in authentication middleware

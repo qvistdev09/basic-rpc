@@ -2,8 +2,19 @@
   "name": "basic-rpc",
   "version": "0.0.7",
   "description": "A lightweight RPC implementation",
-  "main": "dist/index.js",
+  "module": "dist/index.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "import": "./dist/client/index.js"
+    },
+    "./server": {
+      "import": "./dist/client/server.js"
+    }
+  },
   "scripts": {
     "test": "tsc && node --test",
     "build": "tsc",
