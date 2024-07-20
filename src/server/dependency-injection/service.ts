@@ -1,7 +1,8 @@
-class Service<T, D extends DependencyArray> {
+export class Service<T, D extends DependencyArray> {
   public readonly instance?: T;
   public readonly scope: Scope;
   public readonly dependencies?: D;
+  public readonly factory?: (...params: any[]) => T;
 
   constructor(config: ServiceConfig<T, D>) {
     if ("instance" in config) {
@@ -16,6 +17,7 @@ class Service<T, D extends DependencyArray> {
       }
       this.scope = config.scope;
       this.dependencies = config.dependencies;
+      this.factory = config.factory;
     }
   }
 }
@@ -32,13 +34,13 @@ type ServiceConfig<T, D extends DependencyArray> =
       dependencies?: D;
     };
 
-type MappedDependencies<T> = {
+export type MappedDependencies<T> = {
   [Key in keyof T]: T[Key] extends Service<infer TS, any> ? TS : never;
 };
 
 type Scope = "transient" | "singleton" | "scoped";
 
-type DependencyArray = [...Service<any, any>[], Service<any, any>] | undefined;
+export type DependencyArray = [...Service<any, any>[], Service<any, any>] | undefined;
 
 export function createService<T, D extends DependencyArray>(config: ServiceConfig<T, D>) {
   return new Service(config);
