@@ -1,11 +1,13 @@
 import { DependencyArray, MappedDependencies, Service } from "./service";
 
-export class Scope {
+export class ScopedContainer {
   private readonly singletonContext: Context;
+  private readonly servicesRegistry: Set<Service<any, DependencyArray>>;
   private readonly scopedContext: Context = new Map();
 
-  constructor(singletonContext: Context) {
+  constructor(singletonContext: Context, servicesRegistry: Set<Service<any, DependencyArray>>) {
     this.singletonContext = singletonContext;
+    this.servicesRegistry = servicesRegistry;
   }
 
   private attemptGetDependencies(
@@ -175,6 +177,11 @@ export class Scope {
   }
 
   public getInstances<T extends [...Service<any, any>[], Service<any, any>]>(...services: T) {
+    for (const service of services) {
+      if (!this.servicesRegistry.has(service)) {
+        throw new Error("Service has not been registered in the container");
+      }
+    }
     return services.map((service) => this.instantiateService(service)) as MappedDependencies<T>;
   }
 }

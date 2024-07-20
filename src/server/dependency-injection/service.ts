@@ -38,7 +38,7 @@ export type MappedDependencies<T> = {
   [Key in keyof T]: T[Key] extends Service<infer TS, any> ? TS : never;
 };
 
-type Scope = "transient" | "singleton" | "scoped";
+export type Scope = "transient" | "singleton" | "scoped";
 
 export type DependencyArray = [...Service<any, any>[], Service<any, any>] | undefined;
 
