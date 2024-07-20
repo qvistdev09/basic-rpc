@@ -49,6 +49,12 @@ export class Scope {
       return service.instance;
     }
 
+    if (service.scope === "singleton" && !service.dependencies) {
+      const instance = service.factory!();
+      this.singletonContext.set(service, instance);
+      return instance;
+    }
+
     if (service.scope === "scoped" && this.scopedContext.has(service)) {
       return this.scopedContext.get(service);
     }
