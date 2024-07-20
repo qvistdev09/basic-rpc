@@ -13,32 +13,32 @@ export class ScopedContainer {
   private attemptGetDependencies(
     service: Service<any, DependencyArray>,
     transientStore: TransientStore
-  ): { success: false } | { success: true; instances: any[] } {
+  ): any[] | null {
     const instances: any[] = [];
     for (const dependency of service.dependencies!) {
       if (dependency.scope === "singleton") {
         const instance = this.singletonContext.get(dependency);
         if (!instance) {
-          return { success: false };
+          return null;
         }
         instances.push(instance);
       }
       if (dependency.scope === "scoped") {
         const instance = this.scopedContext.get(dependency);
         if (!instance) {
-          return { success: false };
+          return null;
         }
         instances.push(instance);
       }
       if (dependency.scope === "transient") {
         const copies = transientStore.get(dependency);
         if (!copies || copies.length === 0) {
-          return { success: false };
+          return null;
         }
         instances.push(copies.pop());
       }
     }
-    return { success: true, instances };
+    return instances;
   }
 
   private instantiateService(service: Service<any, DependencyArray>) {
@@ -99,12 +99,9 @@ export class ScopedContainer {
               progress = true;
               break;
             }
-            const dependenciesInstances = this.attemptGetDependencies(service, transientStore);
-            if (dependenciesInstances.success) {
-              this.singletonContext.set(
-                service,
-                service.factory!(...dependenciesInstances.instances)
-              );
+            const singletonDependencies = this.attemptGetDependencies(service, transientStore);
+            if (singletonDependencies !== null) {
+              this.singletonContext.set(service, service.factory!(...singletonDependencies));
               processedIndexes.push(index);
               progress = true;
               break;
@@ -122,11 +119,8 @@ export class ScopedContainer {
               break;
             }
             const scopedServiceDependencies = this.attemptGetDependencies(service, transientStore);
-            if (scopedServiceDependencies.success) {
-              this.scopedContext.set(
-                service,
-                service.factory!(...scopedServiceDependencies.instances)
-              );
+            if (scopedServiceDependencies !== null) {
+              this.scopedContext.set(service, service.factory!(...scopedServiceDependencies));
               processedIndexes.push(index);
               progress = true;
               break;
@@ -144,9 +138,9 @@ export class ScopedContainer {
               service,
               transientStore
             );
-            if (transientServiceDependencies.success) {
+            if (transientServiceDependencies !== null) {
               const copies = transientStore.get(service) ?? [];
-              copies.push(service.factory!(...transientServiceDependencies.instances));
+              copies.push(service.factory!(...transientServiceDependencies));
               transientStore.set(service, copies);
               processedIndexes.push(index);
               progress = true;
@@ -163,10 +157,10 @@ export class ScopedContainer {
     }
 
     const serviceDependenciesInstances = this.attemptGetDependencies(service, transientStore);
-    if (!serviceDependenciesInstances.success) {
+    if (!serviceDependenciesInstances === null) {
       throw new Error();
     }
-    const instance = service.factory!(...serviceDependenciesInstances.instances);
+    const instance = service.factory!(...serviceDependenciesInstances!);
     if (service.scope === "singleton") {
       this.singletonContext.set(service, instance);
     }
