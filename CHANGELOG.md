@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- add dependency injection system
 - add exports field to package.json
 
 ## 0.0.7
