@@ -77,6 +77,6 @@ export class RpcServer<T extends AppComposition> {
   }
 }
 
-export function createRpcServer<T extends AppComposition>(procedures: T) {
+export function createRpcServer<T extends AppComposition>(procedures: T): RpcServer<T> {
   return new RpcServer(procedures);
 }
