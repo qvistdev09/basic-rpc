@@ -76,3 +76,37 @@ test("singleton: services can be registered with an instance with automatically 
   const [instance2] = scope2.getInstances(service);
   assert.strictEqual(instance1, instance2);
 });
+
+test("general: mix of scopes and dependencies", () => {
+  assert.doesNotThrow(() => {
+    const container = new Container();
+    const singletonInstance = container.registerInstance({});
+    const singletonFactory = container.registerService("singleton", () => ({}), [
+      singletonInstance,
+    ]);
+    const transient = container.registerService("transient", () => ({}), [
+      singletonInstance,
+      singletonFactory,
+    ]);
+    const transientB = container.registerService("transient", () => ({}), [transient]);
+    const scopedA = container.registerService("scoped", () => ({}), [
+      singletonInstance,
+      singletonFactory,
+      transient,
+    ]);
+    const scopedB = container.registerService("scoped", () => ({}), [
+      scopedA,
+      transientB,
+      transient,
+    ]);
+    const scope = container.createScope();
+    scope.getInstances(
+      singletonInstance,
+      singletonFactory,
+      transient,
+      transientB,
+      scopedA,
+      scopedB
+    );
+  });
+});
