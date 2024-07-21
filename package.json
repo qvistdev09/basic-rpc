@@ -13,6 +13,9 @@
     },
     "./server": {
       "import": "./dist/client/server.js"
+    },
+    "./dependency-injection": {
+      "import": "./dist/server/dependency-injection/index.js"
     }
   },
   "scripts": {
