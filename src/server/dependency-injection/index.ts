@@ -2,6 +2,7 @@ export {
   createServiceInstanceRegistration,
   createServiceRegistration,
   Registration,
+  DependencyArray,
 } from "./registration.js";
 export { Container } from "./container.js";
 export { ScopedContainer } from "./scoped-container.js";

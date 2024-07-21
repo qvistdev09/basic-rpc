@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.10
+
+- export DependencyArray type from di index
+- fix typo in package.json exports field
+
 ## 0.0.9
 
 - export types as possible fix for typeerror in consuming packages
