@@ -1,4 +1,4 @@
-import { AppComposition, ErrorHandler, Middleware } from "../types.js";
+import { AppComposition, Context, ErrorHandler, Middleware } from "../types.js";
 import { getClientJson, getMeta } from "./utils.js";
 import {
   AuthenticationRequired,
@@ -12,6 +12,7 @@ import {
   NoProcedureResponse,
   ProcedureDoesNotExist,
 } from "./errors.js";
+import { MappedDependencies } from "./dependency-injection/registration.js";
 
 export const validateMethod: Middleware = async (ctx, next) => {
   if (ctx.req.getMethod() !== "POST") {
@@ -120,12 +121,16 @@ export const runProcedure: Middleware = async (ctx, next) => {
     return next(new MissingProcedure());
   }
 
+  const services = ctx.req.procedure.dependencies
+    ? ctx.container.getInstances(...ctx.req.procedure.dependencies)
+    : [];
+
   const context =
     ctx.req.user !== undefined
-      ? { req: ctx.req.httpReq, user: ctx.req.user }
-      : { req: ctx.req.httpReq };
+      ? { req: ctx.req.httpReq, user: ctx.req.user, services }
+      : { req: ctx.req.httpReq, services };
 
-  ctx.res.responseData = await ctx.req.procedure.procedure(context, ctx.req.payload);
+  ctx.res.responseData = await ctx.req.procedure.procedure(context as any, ctx.req.payload);
 
   next();
 };

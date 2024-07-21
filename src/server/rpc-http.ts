@@ -5,7 +5,7 @@ import { ProcedureReturn } from "../types.js";
 
 export class RpcRequest {
   public body: unknown | undefined;
-  public procedure: Procedure<any, any, any, any> | undefined;
+  public procedure: Procedure<any, any, any, any, any> | undefined;
   public procedureName: string | undefined;
   public payload: unknown | undefined;
   public user: unknown | undefined;
