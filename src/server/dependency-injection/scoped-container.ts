@@ -157,8 +157,8 @@ export class ScopedContainer {
     }
 
     const serviceDependenciesInstances = this.attemptGetDependencies(service, transientStore);
-    if (!serviceDependenciesInstances === null) {
-      throw new Error();
+    if (serviceDependenciesInstances === null) {
+      throw new Error("Dependencies do not exist for service");
     }
     const instance = service.factory!(...serviceDependenciesInstances!);
     if (service.scope === "singleton") {
