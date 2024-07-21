@@ -1,10 +1,10 @@
-export class Service<T, D extends DependencyArray> {
+export class Registration<T, D extends DependencyArray> {
   public readonly instance?: T;
   public readonly scope: Scope;
   public readonly dependencies?: D;
   public readonly factory?: (...params: any[]) => T;
 
-  constructor(config: ServiceConfig<T, D>) {
+  constructor(config: RegistrationConfig<T, D>) {
     if ("instance" in config) {
       this.instance = config.instance;
       this.scope = "singleton";
@@ -22,7 +22,7 @@ export class Service<T, D extends DependencyArray> {
   }
 }
 
-type ServiceConfig<T, D extends DependencyArray> =
+type RegistrationConfig<T, D extends DependencyArray> =
   | { instance: T }
   | {
       factory: D extends undefined
@@ -35,13 +35,25 @@ type ServiceConfig<T, D extends DependencyArray> =
     };
 
 export type MappedDependencies<T> = {
-  [Key in keyof T]: T[Key] extends Service<infer TS, any> ? TS : never;
+  [Key in keyof T]: T[Key] extends Registration<infer TS, any> ? TS : never;
 };
 
 export type Scope = "transient" | "singleton" | "scoped";
 
-export type DependencyArray = [...Service<any, any>[], Service<any, any>] | undefined;
+export type DependencyArray = [...Registration<any, any>[], Registration<any, any>] | undefined;
 
-export function createService<T, D extends DependencyArray>(config: ServiceConfig<T, D>) {
-  return new Service(config);
+export function createServiceRegistration<T, D extends DependencyArray>(
+  scope: Scope,
+  factory: D extends undefined
+    ? () => T
+    : D extends Array<any>
+    ? (...dependencies: MappedDependencies<D>) => T
+    : never,
+  dependencies?: D
+) {
+  return new Registration({ scope, factory, dependencies });
+}
+
+export function createServiceInstanceRegistration<T>(instance: T) {
+  return new Registration({ instance });
 }

@@ -1,10 +1,14 @@
 import { test } from "node:test";
 import { Container } from "../server/dependency-injection/container.js";
+import {
+  createServiceInstanceRegistration,
+  createServiceRegistration,
+} from "../server/dependency-injection/registration.js";
 import assert from "node:assert";
 
 test("transient: transient services should always be unique", () => {
   const container = new Container();
-  const transient = container.registerService("transient", () => ({ status: "transient" }));
+  const transient = createServiceRegistration("transient", () => ({ status: "transient" }));
   const scope = container.createScope();
   const [instance1, instance2] = scope.getInstances(transient, transient);
   assert.notStrictEqual(instance1, instance2);
@@ -12,21 +16,21 @@ test("transient: transient services should always be unique", () => {
 
 test("transient: dependencies that rely on the same transient service should get their own copies", () => {
   const container = new Container();
-  const transient = container.registerService("transient", () => ({ status: "transient" }));
+  const transient = createServiceRegistration("transient", () => ({ status: "transient" }));
 
-  const dependencyA = container.registerService(
+  const dependencyA = createServiceRegistration(
     "scoped",
     (transient) => ({ myTransient: transient }),
     [transient]
   );
 
-  const dependencyB = container.registerService(
+  const dependencyB = createServiceRegistration(
     "scoped",
     (transient) => ({ myTransient: transient }),
     [transient]
   );
 
-  const main = container.registerService("scoped", (a, b) => ({ a, b }), [
+  const main = createServiceRegistration("scoped", (a, b) => ({ a, b }), [
     dependencyA,
     dependencyB,
   ]);
@@ -40,7 +44,7 @@ test("transient: dependencies that rely on the same transient service should get
 
 test("scoped: scoped services should be the same in one scope", () => {
   const container = new Container();
-  const service = container.registerService("scoped", () => ({ identity: "scoped" }));
+  const service = createServiceRegistration("scoped", () => ({ identity: "scoped" }));
   const scope = container.createScope();
   const [instance1, instance2] = scope.getInstances(service, service);
   assert.strictEqual(instance1, instance2);
@@ -48,7 +52,7 @@ test("scoped: scoped services should be the same in one scope", () => {
 
 test("scoped: scoped services from different scopes should be unique instances", () => {
   const container = new Container();
-  const service = container.registerService("scoped", () => ({ identity: "scoped" }));
+  const service = createServiceRegistration("scoped", () => ({ identity: "scoped" }));
   const scope = container.createScope();
   const [instance1] = scope.getInstances(service);
   const scope2 = container.createScope();
@@ -58,7 +62,7 @@ test("scoped: scoped services from different scopes should be unique instances",
 
 test("singleton: singletons should be the same instance when instantiated in different scopes", () => {
   const container = new Container();
-  const service = container.registerService("singleton", () => ({ identity: "singleton" }));
+  const service = createServiceRegistration("singleton", () => ({ identity: "singleton" }));
   const scope = container.createScope();
   const [instance1] = scope.getInstances(service);
   const scope2 = container.createScope();
@@ -68,7 +72,7 @@ test("singleton: singletons should be the same instance when instantiated in dif
 
 test("singleton: services can be registered with an instance with automatically makes them a singleton", () => {
   const container = new Container();
-  const service = container.registerInstance({ identity: "singleton" });
+  const service = createServiceInstanceRegistration({ identity: "singleton" });
   assert.strictEqual(service.scope, "singleton");
   const scope = container.createScope();
   const [instance1] = scope.getInstances(service);
@@ -80,21 +84,21 @@ test("singleton: services can be registered with an instance with automatically 
 test("general: mix of scopes and dependencies", () => {
   assert.doesNotThrow(() => {
     const container = new Container();
-    const singletonInstance = container.registerInstance({});
-    const singletonFactory = container.registerService("singleton", () => ({}), [
+    const singletonInstance = createServiceInstanceRegistration({});
+    const singletonFactory = createServiceRegistration("singleton", () => ({}), [
       singletonInstance,
     ]);
-    const transient = container.registerService("transient", () => ({}), [
+    const transient = createServiceRegistration("transient", () => ({}), [
       singletonInstance,
       singletonFactory,
     ]);
-    const transientB = container.registerService("transient", () => ({}), [transient]);
-    const scopedA = container.registerService("scoped", () => ({}), [
+    const transientB = createServiceRegistration("transient", () => ({}), [transient]);
+    const scopedA = createServiceRegistration("scoped", () => ({}), [
       singletonInstance,
       singletonFactory,
       transient,
     ]);
-    const scopedB = container.registerService("scoped", () => ({}), [
+    const scopedB = createServiceRegistration("scoped", () => ({}), [
       scopedA,
       transientB,
       transient,

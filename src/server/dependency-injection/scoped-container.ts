@@ -1,17 +1,15 @@
-import { DependencyArray, MappedDependencies, Service } from "./service";
+import { DependencyArray, MappedDependencies, Registration } from "./registration";
 
 export class ScopedContainer {
   private readonly singletonContext: Context;
-  private readonly servicesRegistry: Set<Service<any, DependencyArray>>;
   private readonly scopedContext: Context = new Map();
 
-  constructor(singletonContext: Context, servicesRegistry: Set<Service<any, DependencyArray>>) {
+  constructor(singletonContext: Context) {
     this.singletonContext = singletonContext;
-    this.servicesRegistry = servicesRegistry;
   }
 
   private attemptGetDependencies(
-    service: Service<any, DependencyArray>,
+    service: Registration<any, DependencyArray>,
     transientStore: TransientStore
   ): any[] | null {
     const instances: any[] = [];
@@ -41,7 +39,7 @@ export class ScopedContainer {
     return instances;
   }
 
-  private instantiateService(service: Service<any, DependencyArray>) {
+  private instantiateService(service: Registration<any, DependencyArray>) {
     if (service.scope === "singleton" && this.singletonContext.has(service)) {
       return this.singletonContext.get(service);
     }
@@ -76,72 +74,85 @@ export class ScopedContainer {
     const processedIndexes: number[] = [];
     while (remaining.length !== processedIndexes.length) {
       let progress = false;
-      for (const [index, service] of remaining.entries()) {
+      for (const [index, nestedDependency] of remaining.entries()) {
         if (processedIndexes.includes(index)) {
           continue;
         }
-        switch (service.scope) {
+
+        switch (nestedDependency.scope) {
           case "singleton":
-            if (this.singletonContext.has(service)) {
+            if (this.singletonContext.has(nestedDependency)) {
               processedIndexes.push(index);
               progress = true;
               break;
             }
-            if (service.instance) {
-              this.singletonContext.set(service, service.instance);
+            if (nestedDependency.instance) {
+              this.singletonContext.set(nestedDependency, nestedDependency.instance);
               processedIndexes.push(index);
               progress = true;
               break;
             }
-            if (!service.dependencies) {
-              this.singletonContext.set(service, service.factory!());
+            if (!nestedDependency.dependencies) {
+              this.singletonContext.set(nestedDependency, nestedDependency.factory!());
               processedIndexes.push(index);
               progress = true;
               break;
             }
-            const singletonDependencies = this.attemptGetDependencies(service, transientStore);
+            const singletonDependencies = this.attemptGetDependencies(
+              nestedDependency,
+              transientStore
+            );
             if (singletonDependencies !== null) {
-              this.singletonContext.set(service, service.factory!(...singletonDependencies));
+              this.singletonContext.set(
+                nestedDependency,
+                nestedDependency.factory!(...singletonDependencies)
+              );
               processedIndexes.push(index);
               progress = true;
               break;
             }
           case "scoped":
-            if (this.scopedContext.has(service)) {
+            if (this.scopedContext.has(nestedDependency)) {
               processedIndexes.push(index);
               progress = true;
               break;
             }
-            if (!service.dependencies) {
-              this.scopedContext.set(service, service.factory!());
+            if (!nestedDependency.dependencies) {
+              this.scopedContext.set(nestedDependency, nestedDependency.factory!());
               processedIndexes.push(index);
               progress = true;
               break;
             }
-            const scopedServiceDependencies = this.attemptGetDependencies(service, transientStore);
+            const scopedServiceDependencies = this.attemptGetDependencies(
+              nestedDependency,
+              transientStore
+            );
             if (scopedServiceDependencies !== null) {
-              this.scopedContext.set(service, service.factory!(...scopedServiceDependencies));
+              this.scopedContext.set(
+                nestedDependency,
+                nestedDependency.factory!(...scopedServiceDependencies)
+              );
               processedIndexes.push(index);
               progress = true;
               break;
             }
           case "transient":
-            if (!service.dependencies) {
-              const copies = transientStore.get(service) ?? [];
-              copies.push(service.factory!());
-              transientStore.set(service, copies);
+            if (!nestedDependency.dependencies) {
+              const copies = transientStore.get(nestedDependency) ?? [];
+              copies.push(nestedDependency.factory!());
+              transientStore.set(nestedDependency, copies);
               processedIndexes.push(index);
               progress = true;
               break;
             }
             const transientServiceDependencies = this.attemptGetDependencies(
-              service,
+              nestedDependency,
               transientStore
             );
             if (transientServiceDependencies !== null) {
-              const copies = transientStore.get(service) ?? [];
-              copies.push(service.factory!(...transientServiceDependencies));
-              transientStore.set(service, copies);
+              const copies = transientStore.get(nestedDependency) ?? [];
+              copies.push(nestedDependency.factory!(...transientServiceDependencies));
+              transientStore.set(nestedDependency, copies);
               processedIndexes.push(index);
               progress = true;
               break;
@@ -152,7 +163,7 @@ export class ScopedContainer {
         }
       }
       if (!progress) {
-        throw new Error();
+        throw new Error("Cannot instantiate all dependencies");
       }
     }
 
@@ -170,19 +181,16 @@ export class ScopedContainer {
     return instance;
   }
 
-  public getInstances<T extends [...Service<any, any>[], Service<any, any>]>(...services: T) {
-    for (const service of services) {
-      if (!this.servicesRegistry.has(service)) {
-        throw new Error("Service has not been registered in the container");
-      }
-    }
+  public getInstances<T extends [...Registration<any, any>[], Registration<any, any>]>(
+    ...services: T
+  ) {
     return services.map((service) => this.instantiateService(service)) as MappedDependencies<T>;
   }
 }
 
 function getFlattenedDependencies(
-  service: Service<any, DependencyArray>,
-  dependencies: Service<any, DependencyArray>[] = []
+  service: Registration<any, DependencyArray>,
+  dependencies: Registration<any, DependencyArray>[] = []
 ) {
   if (service.dependencies) {
     service.dependencies.forEach((dependency) => {
@@ -201,6 +209,6 @@ function getFlattenedDependencies(
   return dependencies;
 }
 
-type Context = Map<Service<any, DependencyArray>, any>;
+type Context = Map<Registration<any, DependencyArray>, any>;
 
-type TransientStore = Map<Service<any, DependencyArray>, any[]>;
+type TransientStore = Map<Registration<any, DependencyArray>, any[]>;
