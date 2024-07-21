@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 0.0.8
 
 - merge req and res into ctx object
 - add dependency injection system
