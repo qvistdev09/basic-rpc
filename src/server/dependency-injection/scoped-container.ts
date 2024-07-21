@@ -139,6 +139,10 @@ export class ScopedContainer {
     return services.map((service) => this.instantiateService(service)) as MappedDependencies<T>;
   }
 
+  public getInstance<T>(registration: Registration<T, any>) {
+    return this.instantiateService(registration) as T;
+  }
+
   public setScopedInstance<T>(registration: Registration<T, DependencyArray>, instance: T) {
     this.scopedContext.set(registration, instance);
     return this;

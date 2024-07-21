@@ -1,5 +1,5 @@
 import { IncomingMessage } from "http";
-import { Procedure } from "./server/procedure.js";
+import { Authenticator, Procedure } from "./server/procedure.js";
 import { RpcRequest, RpcResponse } from "./server/rpc-http.js";
 import { RpcServer } from "./server/rpc-server.js";
 import { ScopedContainer } from "./server/dependency-injection/scoped-container.js";
@@ -66,8 +66,6 @@ export type ProcedureConfig<
 };
 
 export type AppComposition = { [key: string]: Procedure<any, any, any, any, any> | undefined };
-
-export type Authenticator<User> = (req: IncomingMessage) => Promise<User | null>;
 
 export type InferredClient<T extends RpcServer<any>> = T extends RpcServer<infer TS>
   ? { [Key in keyof TS]: RemoteProcedure<TS[Key]> }

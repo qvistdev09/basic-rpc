@@ -12,6 +12,7 @@ import {
   NoProcedureResponse,
   ProcedureDoesNotExist,
 } from "./errors.js";
+import { Registration } from "./dependency-injection/registration.js";
 
 export const validateMethod: Middleware = async (ctx, next) => {
   if (ctx.req.getMethod() !== "POST") {
@@ -86,11 +87,16 @@ export const authenticate: Middleware = async (ctx, next) => {
     return next();
   }
 
-  const { authenticator, require } = ctx.req.procedure.authentication;
+  const { authentication } = ctx.req.procedure;
+
+  const authenticator =
+    authentication.authenticator instanceof Registration
+      ? ctx.container.getInstance(authentication.authenticator)
+      : authentication.authenticator;
 
   ctx.req.user = await authenticator(ctx.req.httpReq);
 
-  if (require && !ctx.req.user) {
+  if (authentication.require && !ctx.req.user) {
     return next(new AuthenticationRequired());
   }
 

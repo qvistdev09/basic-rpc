@@ -1,5 +1,6 @@
-import { Authenticator, ProcedureConfig, ProcedureFunction, Validator } from "../types.js";
-import { DependencyArray } from "./dependency-injection/registration.js";
+import { IncomingMessage } from "http";
+import { ProcedureConfig, ProcedureFunction, Validator } from "../types.js";
+import { DependencyArray, Registration } from "./dependency-injection/registration.js";
 
 export class Procedure<
   ClientPayload,
@@ -44,3 +45,7 @@ export function createProcedure<
     config.dependencies
   );
 }
+
+export type Authenticator<User> =
+  | ((req: IncomingMessage) => Promise<User | null>)
+  | Registration<(req: IncomingMessage) => Promise<User | null>, DependencyArray>;
