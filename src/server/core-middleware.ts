@@ -1,4 +1,4 @@
-import { AppComposition, Context, ErrorHandler, Middleware } from "../types.js";
+import { AppComposition, ErrorHandler, Middleware } from "../types.js";
 import { getClientJson, getMeta } from "./utils.js";
 import {
   AuthenticationRequired,
@@ -12,7 +12,6 @@ import {
   NoProcedureResponse,
   ProcedureDoesNotExist,
 } from "./errors.js";
-import { MappedDependencies } from "./dependency-injection/registration.js";
 
 export const validateMethod: Middleware = async (ctx, next) => {
   if (ctx.req.getMethod() !== "POST") {
