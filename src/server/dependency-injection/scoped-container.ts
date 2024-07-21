@@ -1,5 +1,6 @@
-import { getFlattenedDependencies } from "./di-utils";
-import { DependencyArray, MappedDependencies, Registration } from "./registration";
+import { getFlattenedDependencies } from "./di-utils.js";
+import { DependencyArray, MappedDependencies, Registration } from "./registration.js";
+import { TransientStore } from "./transient-store.js";
 
 export class ScopedContainer {
   private readonly singletonContext: Context;
@@ -30,140 +31,90 @@ export class ScopedContainer {
         instances.push(instance);
       }
       if (dependency.scope === "transient") {
-        const copies = transientStore.get(dependency);
-        if (!copies || copies.length === 0) {
+        if (!transientStore.has(dependency)) {
           return null;
         }
-        instances.push(copies.pop());
+        instances.push(transientStore.take(dependency));
       }
     }
     return instances;
   }
 
+  private tryGetWithoutResolving(registration: Registration<any, DependencyArray>): any | null {
+    switch (registration.scope) {
+      case "singleton":
+        if (this.singletonContext.has(registration)) {
+          return this.singletonContext.get(registration);
+        }
+        if (registration.instance) {
+          this.singletonContext.set(registration, registration.instance);
+          return registration.instance;
+        }
+        if (!registration.dependencies) {
+          this.singletonContext.set(registration, registration.factory!());
+          return this.singletonContext.get(registration);
+        }
+      case "scoped":
+        if (this.scopedContext.has(registration)) {
+          return this.scopedContext.get(registration);
+        }
+        if (!registration.dependencies) {
+          this.scopedContext.set(registration, registration.factory!());
+          return this.scopedContext.get(registration);
+        }
+      case "transient":
+        if (!registration.dependencies) {
+          return registration.factory!();
+        }
+    }
+    return null;
+  }
+
   private instantiateService(service: Registration<any, DependencyArray>) {
-    if (service.scope === "singleton" && this.singletonContext.has(service)) {
-      return this.singletonContext.get(service);
+    const availableInstance = this.tryGetWithoutResolving(service);
+    if (availableInstance !== null) {
+      return availableInstance;
     }
 
-    if (service.scope === "singleton" && service.instance) {
-      this.singletonContext.set(service, service.instance);
-      return service.instance;
-    }
-
-    if (service.scope === "singleton" && !service.dependencies) {
-      const instance = service.factory!();
-      this.singletonContext.set(service, instance);
-      return instance;
-    }
-
-    if (service.scope === "scoped" && this.scopedContext.has(service)) {
-      return this.scopedContext.get(service);
-    }
-
-    if (service.scope === "scoped" && !service.dependencies) {
-      const instance = service.factory!();
-      this.scopedContext.set(service, instance);
-      return instance;
-    }
-
-    if (service.scope === "transient" && !service.dependencies) {
-      return service.factory!();
-    }
-
-    const transientStore: TransientStore = new Map();
-    const remaining = getFlattenedDependencies(service);
+    const transientStore = new TransientStore();
+    const allDependencies = getFlattenedDependencies(service);
     const processedIndexes: number[] = [];
-    while (remaining.length !== processedIndexes.length) {
-      let progress = false;
-      for (const [index, nestedDependency] of remaining.entries()) {
+
+    while (allDependencies.length !== processedIndexes.length) {
+      let progressMade = false;
+      for (const [index, nestedDependency] of allDependencies.entries()) {
         if (processedIndexes.includes(index)) {
           continue;
         }
-
-        switch (nestedDependency.scope) {
-          case "singleton":
-            if (this.singletonContext.has(nestedDependency)) {
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-            if (nestedDependency.instance) {
-              this.singletonContext.set(nestedDependency, nestedDependency.instance);
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-            if (!nestedDependency.dependencies) {
-              this.singletonContext.set(nestedDependency, nestedDependency.factory!());
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-            const singletonDependencies = this.attemptGetDependencies(
-              nestedDependency,
-              transientStore
-            );
-            if (singletonDependencies !== null) {
-              this.singletonContext.set(
-                nestedDependency,
-                nestedDependency.factory!(...singletonDependencies)
-              );
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-          case "scoped":
-            if (this.scopedContext.has(nestedDependency)) {
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-            if (!nestedDependency.dependencies) {
-              this.scopedContext.set(nestedDependency, nestedDependency.factory!());
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-            const scopedServiceDependencies = this.attemptGetDependencies(
-              nestedDependency,
-              transientStore
-            );
-            if (scopedServiceDependencies !== null) {
-              this.scopedContext.set(
-                nestedDependency,
-                nestedDependency.factory!(...scopedServiceDependencies)
-              );
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-          case "transient":
-            if (!nestedDependency.dependencies) {
-              const copies = transientStore.get(nestedDependency) ?? [];
-              copies.push(nestedDependency.factory!());
-              transientStore.set(nestedDependency, copies);
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-            const transientServiceDependencies = this.attemptGetDependencies(
-              nestedDependency,
-              transientStore
-            );
-            if (transientServiceDependencies !== null) {
-              const copies = transientStore.get(nestedDependency) ?? [];
-              copies.push(nestedDependency.factory!(...transientServiceDependencies));
-              transientStore.set(nestedDependency, copies);
-              processedIndexes.push(index);
-              progress = true;
-              break;
-            }
-        }
-        if (progress) {
+        const availableNestedInstance = this.tryGetWithoutResolving(nestedDependency);
+        if (availableNestedInstance !== null) {
+          if (nestedDependency.scope === "transient") {
+            transientStore.store(nestedDependency, availableNestedInstance);
+          }
+          processedIndexes.push(index);
+          progressMade = true;
           break;
         }
+
+        const nestedDependencies = this.attemptGetDependencies(nestedDependency, transientStore);
+        if (nestedDependencies === null) {
+          continue;
+        }
+        const nestedInstance = nestedDependency.factory!(...nestedDependencies);
+        if (nestedDependency.scope === "singleton") {
+          this.singletonContext.set(nestedDependency, nestedInstance);
+        }
+        if (nestedDependency.scope === "scoped") {
+          this.scopedContext.set(nestedDependency, nestedInstance);
+        }
+        if (nestedDependency.scope === "transient") {
+          transientStore.store(nestedDependency, nestedInstance);
+        }
+        processedIndexes.push(index);
+        progressMade = true;
+        break;
       }
-      if (!progress) {
+      if (!progressMade) {
         throw new Error("Cannot instantiate all dependencies");
       }
     }
@@ -190,5 +141,3 @@ export class ScopedContainer {
 }
 
 type Context = Map<Registration<any, DependencyArray>, any>;
-
-type TransientStore = Map<Registration<any, DependencyArray>, any[]>;
