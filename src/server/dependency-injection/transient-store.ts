@@ -1,4 +1,4 @@
-import { Registration } from "./registration";
+import { Registration } from "./registration.js";
 
 export class TransientStore {
   private readonly transients: Map<Registration<any, any>, any[]> = new Map();

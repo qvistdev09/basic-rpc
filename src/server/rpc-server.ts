@@ -1,5 +1,5 @@
 import http, { Server } from "http";
-import { AppComposition, ErrorHandler, Middleware, Next } from "../types.js";
+import { AppComposition, ErrorHandler, Middleware, MiddlewareContext, Next } from "../types.js";
 import {
   authenticate,
   parseBody,
@@ -14,7 +14,7 @@ import {
 } from "./core-middleware.js";
 import { createRunner } from "./rpc-server.utils.js";
 import { logStartupInfo } from "./console.js";
-import { RpcRequest, RpcResponse } from "./rpc-http.js";
+import { Container } from "./dependency-injection/container.js";
 
 export class RpcServer<T extends AppComposition> {
   private middlewares: Middleware[] = [parseBody];
@@ -22,18 +22,18 @@ export class RpcServer<T extends AppComposition> {
   private protocol: "http" | "https" = "http";
   private procedures: T;
 
+  public readonly container = new Container();
+
   constructor(procedures: T) {
     this.procedures = procedures;
   }
 
-  addMiddleware(middleware: (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>) {
+  addMiddleware(middleware: (ctx: MiddlewareContext, next: Next) => Promise<void>) {
     this.middlewares.push(middleware);
     return this;
   }
 
-  addErrorHandler(
-    errorHandler: (err: any, req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>
-  ) {
+  addErrorHandler(errorHandler: (err: any, ctx: MiddlewareContext, next: Next) => Promise<void>) {
     this.errorHandlers.push(errorHandler);
     return this;
   }
@@ -63,7 +63,12 @@ export class RpcServer<T extends AppComposition> {
   }
 
   listen(port: number, httpServer?: Server) {
-    const runner = createRunner(this.errorHandlers, this.protocol, this.middlewares);
+    const runner = createRunner(
+      this.errorHandlers,
+      this.protocol,
+      this.middlewares,
+      this.container
+    );
     const server = httpServer ?? http.createServer();
     server.on("request", runner);
     server.listen(port, () => {

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- merge req and res into ctx object
 - add dependency injection system
 - add exports field to package.json
 

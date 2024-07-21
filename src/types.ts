@@ -2,6 +2,7 @@ import { IncomingMessage } from "http";
 import { Procedure } from "./server/procedure.js";
 import { RpcRequest, RpcResponse } from "./server/rpc-http.js";
 import { RpcServer } from "./server/rpc-server.js";
+import { ScopedContainer } from "./server/dependency-injection/scoped-container.js";
 
 export type ProcedureReturn<ReturnData> =
   | { data: ReturnData; status: number }
@@ -80,13 +81,14 @@ export type RemoteProcedure<T> = T extends Procedure<
     : (parameters?: ClientParameters) => ReturnData extends undefined ? never : Promise<ReturnData>
   : never;
 
-export type Middleware = (req: RpcRequest, res: RpcResponse, next: Next) => Promise<void>;
+export type Middleware = (ctx: MiddlewareContext, next: Next) => Promise<void>;
 
-export type ErrorHandler = (
-  err: any,
-  req: RpcRequest,
-  res: RpcResponse,
-  next: Next
-) => Promise<void>;
+export type ErrorHandler = (err: any, ctx: MiddlewareContext, next: Next) => Promise<void>;
 
 export type Next = (err?: any) => void;
+
+export type MiddlewareContext = {
+  req: RpcRequest;
+  res: RpcResponse;
+  container: ScopedContainer;
+};
