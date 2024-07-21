@@ -1,3 +1,4 @@
+import { getFlattenedDependencies } from "./di-utils";
 import { DependencyArray, MappedDependencies, Registration } from "./registration";
 
 export class ScopedContainer {
@@ -186,27 +187,6 @@ export class ScopedContainer {
   ) {
     return services.map((service) => this.instantiateService(service)) as MappedDependencies<T>;
   }
-}
-
-function getFlattenedDependencies(
-  service: Registration<any, DependencyArray>,
-  dependencies: Registration<any, DependencyArray>[] = []
-) {
-  if (service.dependencies) {
-    service.dependencies.forEach((dependency) => {
-      if (dependency.scope === "transient") {
-        dependencies.push(dependency);
-        return;
-      }
-      if (!dependencies.includes(dependency)) {
-        dependencies.push(dependency);
-      }
-    });
-    service.dependencies.forEach((dependency) =>
-      getFlattenedDependencies(dependency, dependencies)
-    );
-  }
-  return dependencies;
 }
 
 type Context = Map<Registration<any, DependencyArray>, any>;
