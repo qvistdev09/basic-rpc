@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.11
+
+- fix another typo in package.json exports field
+- export more server types
+
 ## 0.0.10
 
 - export DependencyArray type from di index
