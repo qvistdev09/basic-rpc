@@ -42,6 +42,7 @@
   },
   "files": [
     "dist/**/*",
-    "!dist/tests/**/*"
+    "!dist/tests/**/*",
+    "!dist/**/*.js.map"
   ]
 }
