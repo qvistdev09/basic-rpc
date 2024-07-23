@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- allow for authenticator to take part in di
+
 ## 0.0.11
 
 - fix another typo in package.json exports field
