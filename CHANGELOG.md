@@ -1,5 +1,8 @@
 # Changelog
 
+[unreleased]
+- use procedure names in url
+
 ## 0.0.12
 
 - allow for authenticator to take part in di

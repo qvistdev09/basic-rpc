@@ -29,10 +29,10 @@ test("auth: successful required authentication", async () => {
 
   const mockReq = new MockReq()
     .setMethod("POST")
-    .setUrl("/api/procedures")
+    .setUrl("/api/procedures/testAuth")
     .setHeader("content-type", "application/json")
     .setHeader("host", "localhost")
-    .setBody(JSON.stringify({ procedure: "testAuth", payload: null }));
+    .setBody("null");
 
   const mockRes = new MockRes();
 

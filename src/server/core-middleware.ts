@@ -1,5 +1,5 @@
 import { AppComposition, ErrorHandler, Middleware } from "../types.js";
-import { getClientJson, getMeta } from "./utils.js";
+import { getClientJson } from "./utils.js";
 import {
   AuthenticationRequired,
   FailedPayloadValidation,
@@ -21,17 +21,19 @@ export const validateMethod: Middleware = async (ctx, next) => {
   next();
 };
 
-export const validateEndpoint =
-  (rpcEndpoint: string): Middleware =>
-  async (ctx, next) => {
+export const validateEndpoint = (rpcEndpoint: string): Middleware => {
+  const endpointRegex = new RegExp(`^${rpcEndpoint}[a-zA-Z]+$`);
+
+  return async (ctx, next) => {
     const requestUrl = ctx.req.getUrl();
 
-    if (!requestUrl || requestUrl !== rpcEndpoint) {
-      return next(new InvalidUrl(`Requests must be posted to '${rpcEndpoint}'`));
+    if (!requestUrl || !endpointRegex.test(requestUrl)) {
+      return next(new InvalidUrl(`RPC requests must be posted to '${rpcEndpoint}'`));
     }
 
     next();
   };
+};
 
 export const validateContentType: Middleware = async (ctx, next) => {
   if (ctx.req.getContentType() !== "application/json") {
@@ -48,15 +50,9 @@ export const parseBody: Middleware = async (ctx, next) => {
 };
 
 export const validateMeta: Middleware = async (ctx, next) => {
-  const meta = getMeta(ctx.req.body);
-
-  if (!meta.valid) {
-    return next(new InvalidPayloadStructure());
-  }
-
-  ctx.req.procedureName = meta.procedureName;
-  ctx.req.payload = meta.payload;
-
+  const procedureName = ctx.req.getUrl()!.split("/").pop()!;
+  ctx.req.procedureName = procedureName;
+  ctx.req.payload = ctx.req.body;
   next();
 };
 

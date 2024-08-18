@@ -37,10 +37,10 @@ test("basic-with-di: procedures should get their dependencies", async () => {
 
   const mockReq = new MockReq()
     .setMethod("POST")
-    .setUrl("/api/procedures")
+    .setUrl("/api/procedures/helloWorld")
     .setHeader("content-type", "application/json")
     .setHeader("host", "localhost")
-    .setBody(JSON.stringify({ procedure: "helloWorld", payload: null }));
+    .setBody("null");
 
   const mockRes = new MockRes();
 

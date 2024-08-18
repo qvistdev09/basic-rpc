@@ -43,7 +43,13 @@ export class RpcServer<T extends AppComposition> {
     return this;
   }
 
-  addRpcMiddleware(rpcEndpoint: string = "/api/procedures") {
+  /**
+   * Adds RPC middleware which handles requests to the RPC endpoint.
+   * @param rpcEndpoint
+   * The endpoint which handles RPC requests. Must include an initial and ending forward slash.
+   * @default "/api/procedures/"
+   */
+  addRpcMiddleware(rpcEndpoint: string = "/api/procedures/") {
     this.middlewares.push(
       validateMethod,
       validateEndpoint(rpcEndpoint),

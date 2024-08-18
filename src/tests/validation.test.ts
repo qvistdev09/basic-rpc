@@ -29,15 +29,10 @@ test("validator: invalid and valid results", async () => {
 
   const mockReqValid = new MockReq()
     .setMethod("POST")
-    .setUrl("/api/procedures")
+    .setUrl("/api/procedures/withValidator")
     .setHeader("content-type", "application/json")
     .setHeader("host", "localhost")
-    .setBody(
-      JSON.stringify({
-        procedure: "withValidator",
-        payload: { message: "this payload should come back" },
-      })
-    );
+    .setBody(JSON.stringify({ message: "this payload should come back" }));
 
   const mockResValid = new MockRes();
 
@@ -55,15 +50,10 @@ test("validator: invalid and valid results", async () => {
 
   const mockReqInvalid = new MockReq()
     .setMethod("POST")
-    .setUrl("/api/procedures")
+    .setUrl("/api/procedures/withValidator")
     .setHeader("content-type", "application/json")
     .setHeader("host", "localhost")
-    .setBody(
-      JSON.stringify({
-        procedure: "withValidator",
-        payload: { message: "this payload should not come back" },
-      })
-    );
+    .setBody(JSON.stringify({ message: "this payload should not come back" }));
 
   const mockResInvalid = new MockRes();
 
