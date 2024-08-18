@@ -1,6 +1,6 @@
 # Changelog
 
-[unreleased]
+## 0.0.13
 - use procedure names in url
 - create client cache to avoid recreating api methods
 
