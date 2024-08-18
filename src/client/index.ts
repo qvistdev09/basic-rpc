@@ -22,12 +22,19 @@ export function createClient<T extends RpcServer<any>>(rpcEndpoint: string = "/a
     return await response.json();
   }
 
+  const cachedMethods = new Map<string, (parameters?: GenericParameters) => any>();
+
   return new Proxy(
     {},
     {
-      get: (target, procedure: string) => {
-        return (parameters?: GenericParameters) =>
-          callRpc(procedure, parameters?.payload, parameters?.headers, parameters?.abortController);
+      get: (_, procedure: string) => {
+        if (cachedMethods.has(procedure)) {
+          return cachedMethods.get(procedure);
+        }
+        cachedMethods.set(procedure, (parameters?: GenericParameters) =>
+          callRpc(procedure, parameters?.payload, parameters?.headers, parameters?.abortController)
+        );
+        return cachedMethods.get(procedure);
       },
     }
   ) as InferredClient<T>;
