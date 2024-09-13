@@ -1,18 +1,18 @@
+import { Procedure } from "../server/procedure.js";
 import { RpcServer } from "../server/rpc-server.js";
-import { InferredClient } from "../types.js";
 
 export function createClient<T extends RpcServer<any>>(rpcEndpoint: string = "/api/procedures/") {
   async function callRpc(
     procedure: string,
     payload: any,
     headers?: Record<string, string>,
-    abortController?: AbortController
+    abortSignal?: AbortSignal
   ) {
     const response = await fetch(`${rpcEndpoint}${procedure}`, {
       method: "POST",
       body: JSON.stringify(payload ?? null),
       headers: { ...(headers ?? {}), ["Content-Type"]: "application/json" },
-      signal: abortController?.signal,
+      signal: abortSignal,
     });
 
     if (!response.ok) {
@@ -22,7 +22,7 @@ export function createClient<T extends RpcServer<any>>(rpcEndpoint: string = "/a
     return await response.json();
   }
 
-  const cachedMethods = new Map<string, (parameters?: GenericParameters) => any>();
+  const cachedMethods = new Map<string, (...args: any[]) => any>();
 
   return new Proxy(
     {},
@@ -31,8 +31,14 @@ export function createClient<T extends RpcServer<any>>(rpcEndpoint: string = "/a
         if (cachedMethods.has(procedure)) {
           return cachedMethods.get(procedure);
         }
-        cachedMethods.set(procedure, (parameters?: GenericParameters) =>
-          callRpc(procedure, parameters?.payload, parameters?.headers, parameters?.abortController)
+        cachedMethods.set(
+          procedure,
+          (first: unknown, second: undefined | OptionalRequestOptions) => {
+            if (first === undefined || isOptionalParameters(first)) {
+              return callRpc(procedure, null, first?.headers, first?.abortSignal);
+            }
+            return callRpc(procedure, first, second?.headers, second?.abortSignal);
+          }
         );
         return cachedMethods.get(procedure);
       },
@@ -40,8 +46,44 @@ export function createClient<T extends RpcServer<any>>(rpcEndpoint: string = "/a
   ) as InferredClient<T>;
 }
 
-type GenericParameters = {
-  payload: any;
+type InferredClient<T> = T extends RpcServer<infer TS>
+  ? { [Key in keyof TS]: RemoteProcedure<TS[Key]> }
+  : never;
+
+type RemoteProcedure<T> = T extends Procedure<infer PayloadType, infer ReturnType, any, any, any>
+  ? PayloadType extends object
+    ? (payload: PayloadType, parameters?: OptionalRequestOptions) => ClientReturnData<ReturnType>
+    : (parameters?: OptionalRequestOptions) => ClientReturnData<ReturnType>
+  : never;
+
+type ClientReturnData<T> = T extends undefined ? Promise<void> : Promise<T>;
+
+type OptionalRequestOptions = {
   headers?: Record<string, string>;
-  abortController?: AbortController;
+  abortSignal?: AbortSignal;
 };
+
+function isObj(obj: unknown): obj is object {
+  return obj !== null && typeof obj === "object" && !Array.isArray(obj);
+}
+
+function isOptionalParameters(obj: unknown): obj is OptionalRequestOptions {
+  if (!isObj(obj)) {
+    return false;
+  }
+
+  if (
+    "headers" in obj &&
+    isObj(obj.headers) &&
+    Object.keys(obj.headers).every((key) => typeof key === "string") &&
+    Object.values(obj.headers).every((value) => typeof value === "string")
+  ) {
+    return true;
+  }
+
+  if ("abortSignal" in obj && obj.abortSignal instanceof AbortSignal) {
+    return true;
+  }
+
+  return false;
+}

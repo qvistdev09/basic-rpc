@@ -1,4 +1,4 @@
-import { AppComposition } from "../types.js";
+import { AppComposition } from "./rpc-server.js";
 
 export const bold = "\x1b[1m";
 export const reset = "\x1b[0m";
@@ -16,7 +16,7 @@ export function logStartupInfo(procedures: AppComposition) {
     const procedure = procedures[key]!;
     const info = [];
 
-    if (procedure.authentication) {
+    if (procedure.authenticator) {
       info.push(`${blue}[Auth]${reset}`);
     }
 

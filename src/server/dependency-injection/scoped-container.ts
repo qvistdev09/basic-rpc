@@ -143,10 +143,13 @@ export class ScopedContainer {
     return this.instantiateService(registration) as T;
   }
 
-  public setScopedInstance<T>(registration: Registration<T, DependencyArray>, instance: T) {
+  public setScopedInstance<T>(
+    registration: Registration<T, DependencyArray | undefined>,
+    instance: T
+  ) {
     this.scopedContext.set(registration, instance);
     return this;
   }
 }
 
-type Context = Map<Registration<any, DependencyArray>, any>;
+type Context = Map<Registration<any, DependencyArray | undefined>, any>;

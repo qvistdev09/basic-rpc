@@ -1,5 +1,8 @@
 # Changelog
 
+[Unreleased]
+- refactor req and res objects for better ergonomics as well as procedure arguments structure
+
 ## 0.0.13
 - use procedure names in url
 - create client cache to avoid recreating api methods

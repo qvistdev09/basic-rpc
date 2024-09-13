@@ -1,28 +1,24 @@
 import test from "node:test";
-import { createServiceRegistration } from "../server/dependency-injection/registration.js";
-import { createProcedure } from "../server/procedure.js";
 import { MockReq, MockRes, MockServer } from "./mocks.js";
-import { createRpcServer } from "../server/rpc-server.js";
 import { Server } from "node:http";
 import assert from "node:assert/strict";
+import { Registration } from "../server/dependency-injection/registration.js";
+import { Procedure } from "../server/procedure.js";
+import { RpcServer } from "../server/rpc-server.js";
 
 test("basic-with-di: procedures should get their dependencies", async () => {
   class SomeDependency {
     constructor(public name: string) {}
   }
 
-  const someDependencyRegistration = createServiceRegistration(
-    "scoped",
-    () => new SomeDependency("test")
-  );
+  const someDependencyRegistration = Registration.scoped(() => new SomeDependency("test"));
 
   let receivedService: any;
 
   const procedures = {
-    helloWorld: createProcedure({
+    helloWorld: new Procedure({
       dependencies: [someDependencyRegistration],
-      async procedure(ctx) {
-        const [someDependency] = ctx.services;
+      async procedure(someDependency) {
         receivedService = someDependency;
         return { status: 200, data: { message: "Hello world" } };
       },
@@ -31,7 +27,7 @@ test("basic-with-di: procedures should get their dependencies", async () => {
 
   const mockServer = new MockServer();
 
-  const testServer = createRpcServer(procedures);
+  const testServer = new RpcServer(procedures);
 
   testServer.addRpcMiddleware().addSendRpcResponse();
 

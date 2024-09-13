@@ -1,12 +1,7 @@
-import { IncomingMessage, ServerResponse } from "http";
-import { createServiceRegistration } from "./registration.js";
+import { Registration } from "./registration.js";
+import { Req } from "../http-req.js";
+import { Res } from "../http-res.js";
 
-export const INCOMING_MESSAGE = createServiceRegistration(
-  "scoped",
-  () => null as unknown as IncomingMessage
-);
+export const REQ = Registration.scoped(() => null as unknown as Req);
 
-export const SERVER_RESPONSE = createServiceRegistration(
-  "scoped",
-  () => null as unknown as ServerResponse
-);
+export const RES = Registration.scoped(() => null as unknown as Res);

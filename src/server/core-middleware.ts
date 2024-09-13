@@ -1,4 +1,4 @@
-import { AppComposition, ErrorHandler, Middleware } from "../types.js";
+import { AppComposition, ErrorHandler, Middleware } from "./rpc-server.js";
 import { getClientJson } from "./utils.js";
 import {
   AuthenticationRequired,
@@ -8,14 +8,15 @@ import {
   InvalidPayloadStructure,
   InvalidUrl,
   MissingProcedure,
-  MissingProcedureName,
   NoProcedureResponse,
   ProcedureDoesNotExist,
 } from "./errors.js";
 import { Registration } from "./dependency-injection/registration.js";
+import { ContentType } from "./content-type.js";
+import { HttpMethod } from "./http-method.js";
 
 export const validateMethod: Middleware = async (ctx, next) => {
-  if (ctx.req.getMethod() !== "POST") {
+  if (ctx.req.httpMethod !== HttpMethod.Post) {
     return next(new InvalidHttpMethod());
   }
   next();
@@ -25,9 +26,9 @@ export const validateEndpoint = (rpcEndpoint: string): Middleware => {
   const endpointRegex = new RegExp(`^${rpcEndpoint}[a-zA-Z]+$`);
 
   return async (ctx, next) => {
-    const requestUrl = ctx.req.getUrl();
+    const { url } = ctx.req;
 
-    if (!requestUrl || !endpointRegex.test(requestUrl)) {
+    if (!url || !endpointRegex.test(url)) {
       return next(new InvalidUrl(`RPC requests must be posted to '${rpcEndpoint}'`));
     }
 
@@ -36,34 +37,23 @@ export const validateEndpoint = (rpcEndpoint: string): Middleware => {
 };
 
 export const validateContentType: Middleware = async (ctx, next) => {
-  if (ctx.req.getContentType() !== "application/json") {
+  if (ctx.req.contentType !== ContentType.ApplicationJson) {
     return next(new InvalidContentType());
   }
   next();
 };
 
 export const parseBody: Middleware = async (ctx, next) => {
-  if (ctx.req.getContentType() === "application/json") {
-    ctx.req.body = await getClientJson(ctx.req.httpReq);
-  }
-  next();
-};
-
-export const validateMeta: Middleware = async (ctx, next) => {
-  const procedureName = ctx.req.getUrl()!.split("/").pop()!;
-  ctx.req.procedureName = procedureName;
-  ctx.req.payload = ctx.req.body;
+  ctx.req.body = await getClientJson(ctx.req);
   next();
 };
 
 export const validateProcedure =
   (app: AppComposition): Middleware =>
   async (ctx, next) => {
-    if (!ctx.req.procedureName) {
-      return next(new MissingProcedureName());
-    }
+    const procedureName = (ctx.req.url ?? "").split("/").pop()!;
 
-    const procedure = app[ctx.req.procedureName];
+    const procedure = app[procedureName];
 
     if (!procedure) {
       return next(new ProcedureDoesNotExist());
@@ -79,20 +69,18 @@ export const authenticate: Middleware = async (ctx, next) => {
     return next(new MissingProcedure());
   }
 
-  if (!ctx.req.procedure.authentication) {
+  if (!ctx.req.procedure.authenticator) {
     return next();
   }
 
-  const { authentication } = ctx.req.procedure;
-
   const authenticator =
-    authentication.authenticator instanceof Registration
-      ? ctx.container.getInstance(authentication.authenticator)
-      : authentication.authenticator;
+    ctx.req.procedure.authenticator instanceof Registration
+      ? ctx.container.getInstance(ctx.req.procedure.authenticator)
+      : ctx.req.procedure.authenticator;
 
-  ctx.req.user = await authenticator(ctx.req.httpReq);
+  ctx.req.user = await authenticator(ctx.req);
 
-  if (authentication.require && !ctx.req.user) {
+  if (ctx.req.procedure.authRequired && ctx.req.user === null) {
     return next(new AuthenticationRequired());
   }
 
@@ -108,7 +96,7 @@ export const validatePayload: Middleware = async (ctx, next) => {
     return next();
   }
 
-  const validationResult = ctx.req.procedure.validator(ctx.req.payload);
+  const validationResult = ctx.req.procedure.validator(ctx.req.body);
 
   if (!validationResult.valid) {
     return next(new FailedPayloadValidation(validationResult.errors));
@@ -118,34 +106,47 @@ export const validatePayload: Middleware = async (ctx, next) => {
 };
 
 export const runProcedure: Middleware = async (ctx, next) => {
-  if (!ctx.req.procedure) {
+  const { procedure } = ctx.req;
+
+  if (!procedure) {
     return next(new MissingProcedure());
   }
 
-  const services = ctx.req.procedure.dependencies
-    ? ctx.container.getInstances(...ctx.req.procedure.dependencies)
-    : [];
+  const procedureArguments: any[] = [];
 
-  const context =
-    ctx.req.user !== undefined
-      ? { req: ctx.req.httpReq, user: ctx.req.user, services }
-      : { req: ctx.req.httpReq, services };
+  if (procedure.validator) {
+    procedureArguments.push(ctx.req.body);
+  }
 
-  ctx.res.responseData = await ctx.req.procedure.procedure(context as any, ctx.req.payload);
+  if (procedure.authenticator) {
+    procedureArguments.push(ctx.req.user);
+  }
+
+  const services = procedure.dependencies
+    ? ctx.container.getInstances(...procedure.dependencies)
+    : undefined;
+
+  if (services) {
+    procedureArguments.push(...services);
+  }
+
+  ctx.res.procedureReturn = await procedure.run(...procedureArguments);
 
   next();
 };
 
 export const sendProcedureResponse: Middleware = async (ctx, next) => {
-  if (!ctx.res.responseData) {
+  const { procedureReturn } = ctx.res;
+
+  if (!procedureReturn) {
     return next(new NoProcedureResponse());
   }
 
-  if ("data" in ctx.res.responseData) {
-    return ctx.res.status(ctx.res.responseData.status).json(ctx.res.responseData.data);
+  if ("data" in procedureReturn) {
+    return ctx.res.status(procedureReturn.status).json(procedureReturn.data);
   }
 
-  ctx.res.status(ctx.res.responseData.status).message(ctx.res.responseData.message);
+  ctx.res.status(procedureReturn.status).message(procedureReturn.message);
 };
 
 export const defaultErrorHandler: ErrorHandler = async (err, ctx) => {

@@ -1,29 +1,30 @@
 import { test } from "node:test";
-import { IncomingMessage, Server } from "http";
+import { Server } from "http";
 import assert from "node:assert/strict";
 import { MockReq, MockRes, MockServer } from "./mocks.js";
-import { createRpcServer, createProcedure, createServiceRegistration } from "../index.js";
+import { Procedure, Registration, Req, RpcServer } from "../index.js";
 
 test("auth: successful required authentication", async () => {
   const mockServer = new MockServer();
 
-  const authenticator = createServiceRegistration("transient", () => {
-    return async (req: IncomingMessage) => ({ id: 2525 });
+  const authenticator = Registration.transient(() => {
+    return async (req: Req) => {
+      return { id: 2525 };
+    };
+  });
+
+  const testAuth = new Procedure({
+    authentication: { authenticator, require: true },
+    procedure: async (user) => {
+      return { status: 200, data: { user } };
+    },
   });
 
   const procedures = {
-    testAuth: createProcedure({
-      authentication: {
-        require: true,
-        authenticator,
-      },
-      async procedure(ctx) {
-        return { status: 200, data: { user: ctx.user } };
-      },
-    }),
+    testAuth,
   };
 
-  const testServer = createRpcServer(procedures);
+  const testServer = new RpcServer(procedures);
 
   testServer.addRpcMiddleware().addSendRpcResponse();
 

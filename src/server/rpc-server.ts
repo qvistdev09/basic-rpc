@@ -1,5 +1,4 @@
 import http, { Server } from "http";
-import { AppComposition, ErrorHandler, Middleware, MiddlewareContext, Next } from "../types.js";
 import {
   authenticate,
   parseBody,
@@ -7,7 +6,6 @@ import {
   sendProcedureResponse,
   validateContentType,
   validateEndpoint,
-  validateMeta,
   validateMethod,
   validatePayload,
   validateProcedure,
@@ -15,12 +13,16 @@ import {
 import { createRunner } from "./rpc-server.utils.js";
 import { logStartupInfo } from "./console.js";
 import { Container } from "./dependency-injection/container.js";
+import { Procedure } from "./procedure.js";
+import { ScopedContainer } from "./dependency-injection/scoped-container.js";
+import { Req } from "./http-req.js";
+import { Res } from "./http-res.js";
 
 export class RpcServer<T extends AppComposition> {
   private middlewares: Middleware[] = [parseBody];
   private errorHandlers: ErrorHandler[] = [];
-  private protocol: "http" | "https" = "http";
   private procedures: T;
+  public config: RpcServerConfig = { trustXForwardedFor: false };
 
   public readonly container = new Container();
 
@@ -38,8 +40,12 @@ export class RpcServer<T extends AppComposition> {
     return this;
   }
 
-  setProtocol(protocol: "http" | "https") {
-    this.protocol = protocol;
+  /**
+   * Decides whether to trust the ``x-forwarded-for`` header. If yes, the client's ip address on the req object
+   * will be sourced from this header, which is usually the case when running behind a reverse proxy.
+   */
+  setTrustXForwardedFor(shouldTrust: boolean) {
+    this.config.trustXForwardedFor = shouldTrust;
     return this;
   }
 
@@ -54,7 +60,6 @@ export class RpcServer<T extends AppComposition> {
       validateMethod,
       validateEndpoint(rpcEndpoint),
       validateContentType,
-      validateMeta,
       validateProcedure(this.procedures),
       authenticate,
       validatePayload,
@@ -69,12 +74,7 @@ export class RpcServer<T extends AppComposition> {
   }
 
   listen(port: number, httpServer?: Server) {
-    const runner = createRunner(
-      this.errorHandlers,
-      this.protocol,
-      this.middlewares,
-      this.container
-    );
+    const runner = createRunner(this.errorHandlers, this.config, this.middlewares, this.container);
     const server = httpServer ?? http.createServer();
     server.on("request", runner);
     server.listen(port, () => {
@@ -83,6 +83,24 @@ export class RpcServer<T extends AppComposition> {
   }
 }
 
-export function createRpcServer<T extends AppComposition>(procedures: T): RpcServer<T> {
-  return new RpcServer(procedures);
-}
+export type RpcServerConfig = {
+  /**
+   * Whether to source client ip from the 'x-forwarded-for' header (i.e. when running behind a reverse proxy).
+   * @default false
+   */
+  trustXForwardedFor: boolean;
+};
+
+export type AppComposition = { [key: string]: Procedure<any, any, any, any, any> | undefined };
+
+export type Middleware = (ctx: MiddlewareContext, next: Next) => Promise<void>;
+
+export type ErrorHandler = (err: any, ctx: MiddlewareContext, next: Next) => Promise<void>;
+
+export type Next = (err?: any) => void;
+
+export type MiddlewareContext = {
+  req: Req;
+  res: Res;
+  container: ScopedContainer;
+};

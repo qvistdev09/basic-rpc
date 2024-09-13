@@ -2,20 +2,21 @@ import { test } from "node:test";
 import { Server } from "http";
 import assert from "node:assert/strict";
 import { MockReq, MockRes, MockServer } from "./mocks.js";
-import { createRpcServer, createProcedure } from "../index.js";
+import { Procedure } from "../server/procedure.js";
+import { RpcServer } from "../server/rpc-server.js";
 
 test("basic: happy path with no payload", async () => {
   const mockServer = new MockServer();
 
   const procedures = {
-    helloWorld: createProcedure({
+    helloWorld: new Procedure({
       async procedure() {
         return { status: 200, data: { message: "Hello world" } };
       },
     }),
   };
 
-  const testServer = createRpcServer(procedures);
+  const testServer = new RpcServer(procedures);
 
   testServer.addRpcMiddleware().addSendRpcResponse();
 

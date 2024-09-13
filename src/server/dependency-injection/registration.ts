@@ -1,10 +1,13 @@
-export class Registration<T, D extends DependencyArray> {
-  public readonly instance?: T;
+export class Registration<
+  ServiceType,
+  Dependencies extends DependencyArray | undefined = undefined
+> {
+  public readonly instance?: ServiceType;
   public readonly scope: Scope;
-  public readonly dependencies?: D;
-  public readonly factory?: (...params: any[]) => T;
+  public readonly dependencies?: Dependencies;
+  public readonly factory?: (...params: any[]) => ServiceType;
 
-  constructor(config: RegistrationConfig<T, D>) {
+  constructor(config: RegistrationConfig<ServiceType, Dependencies>) {
     if ("instance" in config) {
       this.instance = config.instance;
       this.scope = "singleton";
@@ -20,40 +23,62 @@ export class Registration<T, D extends DependencyArray> {
       this.factory = config.factory;
     }
   }
+
+  public static instance<SingletonType>(instance: SingletonType) {
+    return new Registration({ instance });
+  }
+
+  public static singleton<
+    ServiceType,
+    Dependencies extends DependencyArray | undefined = undefined
+  >(
+    factory: Dependencies extends DependencyArray
+      ? (...dependencies: MappedDependencies<Dependencies>) => ServiceType
+      : () => ServiceType,
+    dependencies?: Dependencies
+  ) {
+    return new Registration({ scope: "singleton", factory, dependencies });
+  }
+
+  public static scoped<ServiceType, Dependencies extends DependencyArray | undefined = undefined>(
+    factory: Dependencies extends DependencyArray
+      ? (...dependencies: MappedDependencies<Dependencies>) => ServiceType
+      : () => ServiceType,
+    dependencies?: Dependencies
+  ) {
+    return new Registration({ scope: "scoped", factory, dependencies });
+  }
+
+  public static transient<
+    ServiceType,
+    Dependencies extends DependencyArray | undefined = undefined
+  >(
+    factory: Dependencies extends DependencyArray
+      ? (...dependencies: MappedDependencies<Dependencies>) => ServiceType
+      : () => ServiceType,
+    dependencies?: Dependencies
+  ) {
+    return new Registration({ scope: "transient", factory, dependencies });
+  }
 }
 
-type RegistrationConfig<T, D extends DependencyArray> =
-  | { instance: T }
+export type RegistrationConfig<
+  ServiceType,
+  Dependencies extends DependencyArray | undefined = undefined
+> =
+  | { instance: ServiceType }
   | {
-      factory: D extends undefined
-        ? () => T
-        : D extends Array<any>
-        ? (...dependencies: MappedDependencies<D>) => T
-        : never;
+      factory: Dependencies extends DependencyArray
+        ? (...dependencies: MappedDependencies<Dependencies>) => ServiceType
+        : () => ServiceType;
       scope: Scope;
-      dependencies?: D;
+      dependencies?: Dependencies;
     };
 
-export type MappedDependencies<T> = {
-  [Key in keyof T]: T[Key] extends Registration<infer TS, any> ? TS : never;
+export type MappedDependencies<T extends DependencyArray> = {
+  [Key in keyof T]: T[Key] extends Registration<infer TS, any> ? TS : T[Key];
 };
 
 export type Scope = "transient" | "singleton" | "scoped";
 
-export type DependencyArray = [...Registration<any, any>[], Registration<any, any>] | undefined;
-
-export function createServiceRegistration<T, D extends DependencyArray>(
-  scope: Scope,
-  factory: D extends undefined
-    ? () => T
-    : D extends Array<any>
-    ? (...dependencies: MappedDependencies<D>) => T
-    : never,
-  dependencies?: D
-) {
-  return new Registration({ scope, factory, dependencies });
-}
-
-export function createServiceInstanceRegistration<T>(instance: T) {
-  return new Registration({ instance });
-}
+export type DependencyArray = [...Registration<any, any>[], Registration<any, any>];

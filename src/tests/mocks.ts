@@ -9,6 +9,10 @@ export class MockReq {
   public method: string | undefined = undefined;
   public headers: Record<string, string> = {};
 
+  public socket = {
+    remoteAddress: "192.168.0.1",
+  };
+
   public setUrl(url: string) {
     this.url = url;
     return this;
