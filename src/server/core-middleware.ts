@@ -12,8 +12,8 @@ import {
   ProcedureDoesNotExist,
 } from "./errors.js";
 import { Registration } from "./dependency-injection/registration.js";
-import { ContentType } from "./content-type.js";
-import { HttpMethod } from "./http-method.js";
+import { ContentType } from "./enums/content-type.js";
+import { HttpMethod } from "./enums/http-method.js";
 
 export const validateMethod: Middleware = async (ctx, next) => {
   if (ctx.req.httpMethod !== HttpMethod.Post) {

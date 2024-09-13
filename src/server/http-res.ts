@@ -1,6 +1,6 @@
 import { ServerResponse } from "http";
-import { ContentType } from "./content-type.js";
-import { HttpHeader } from "./http-header.js";
+import { ContentType } from "./enums/content-type.js";
+import { HttpHeader } from "./enums/http-header.js";
 import { ProcedureReturn } from "./procedure.js";
 
 function json(this: Res, data: any) {

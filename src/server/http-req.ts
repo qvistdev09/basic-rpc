@@ -1,9 +1,9 @@
 import { IncomingMessage } from "http";
-import { ContentType } from "./content-type.js";
-import { HttpHeader } from "./http-header.js";
+import { ContentType } from "./enums/content-type.js";
+import { HttpHeader } from "./enums/http-header.js";
 import { RpcServerConfig } from "./rpc-server.js";
 import { Procedure } from "./procedure.js";
-import { HttpMethod } from "./http-method.js";
+import { HttpMethod } from "./enums/http-method.js";
 
 function parseQueryFromUrl(url: string | undefined): Record<string, string | undefined> {
   if (!url) {
