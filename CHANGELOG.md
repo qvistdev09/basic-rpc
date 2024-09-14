@@ -1,6 +1,9 @@
 # Changelog
 
-[Unreleased]
+## 0.0.15
+- fix ClientReturnData type error
+
+## 0.0.14
 - refactor req and res objects for better ergonomics as well as procedure arguments structure
 
 ## 0.0.13

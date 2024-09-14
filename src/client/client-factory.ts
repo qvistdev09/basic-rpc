@@ -56,7 +56,7 @@ type RemoteProcedure<T> = T extends Procedure<infer PayloadType, infer ReturnTyp
     : (parameters?: OptionalRequestOptions) => ClientReturnData<ReturnType>
   : never;
 
-type ClientReturnData<T> = T extends undefined ? Promise<void> : Promise<T>;
+type ClientReturnData<T> = T extends undefined ? never : Promise<T>;
 
 type OptionalRequestOptions = {
   headers?: Record<string, string>;
