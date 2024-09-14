@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.16
+- improve return type for void-returning procedures
+
 ## 0.0.15
 - fix ClientReturnData type error
 
