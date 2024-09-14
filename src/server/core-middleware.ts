@@ -43,7 +43,10 @@ export const validateContentType: Middleware = async (ctx, next) => {
 };
 
 export const parseBody: Middleware = async (ctx, next) => {
-  ctx.req.body = await getClientJson(ctx.req);
+  if (ctx.req.contentType === ContentType.ApplicationJson) {
+    ctx.req.body = await getClientJson(ctx.req);
+  }
+
   next();
 };
 

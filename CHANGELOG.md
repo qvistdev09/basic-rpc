@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.17
+- add missing content-type check in parseBody middleware
+
 ## 0.0.16
 - improve return type for void-returning procedures
 
