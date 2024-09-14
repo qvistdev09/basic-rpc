@@ -5,7 +5,6 @@ import {
   FailedPayloadValidation,
   InvalidContentType,
   InvalidHttpMethod,
-  InvalidPayloadStructure,
   InvalidUrl,
   MissingProcedure,
   NoProcedureResponse,
@@ -160,14 +159,6 @@ export const defaultErrorHandler: ErrorHandler = async (err, ctx) => {
 
   if (err instanceof InvalidContentType) {
     return ctx.res.status(415).message("Only content-type 'application/json' is allowed");
-  }
-
-  if (err instanceof InvalidPayloadStructure) {
-    return ctx.res
-      .status(400)
-      .message(
-        "Request body is not structured correctly. It should contain 'procedure' and 'payload'"
-      );
   }
 
   if (err instanceof ProcedureDoesNotExist) {

@@ -79,6 +79,6 @@ export type MappedDependencies<T extends DependencyArray> = {
   [Key in keyof T]: T[Key] extends Registration<infer TS, any> ? TS : T[Key];
 };
 
-export type Scope = "transient" | "singleton" | "scoped";
+type Scope = "transient" | "singleton" | "scoped";
 
 export type DependencyArray = [...Registration<any, any>[], Registration<any, any>];

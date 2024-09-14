@@ -11,8 +11,6 @@ export class InvalidUrl extends Error {
 
 export class InvalidContentType extends Error {}
 
-export class InvalidPayloadStructure extends Error {}
-
 export class ProcedureDoesNotExist extends Error {}
 
 export class AuthenticationRequired extends Error {}
