@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.18
+- add hostname option to server listen method
+
 ## 0.0.17
 - add missing content-type check in parseBody middleware
 

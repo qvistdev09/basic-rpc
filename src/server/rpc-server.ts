@@ -73,13 +73,20 @@ export class RpcServer<T extends AppComposition> {
     return this;
   }
 
-  listen(port: number, httpServer?: Server) {
+  listen({ port, httpServer, hostname }: { port: number; httpServer?: Server; hostname?: string }) {
     const runner = createRunner(this.errorHandlers, this.config, this.middlewares, this.container);
     const server = httpServer ?? http.createServer();
     server.on("request", runner);
-    server.listen(port, () => {
+
+    const logStartupCallback = () => {
       logStartupInfo(this.procedures);
-    });
+    };
+
+    if (hostname) {
+      server.listen(port, hostname, logStartupCallback);
+    } else {
+      server.listen(port, logStartupCallback);
+    }
   }
 }
 
