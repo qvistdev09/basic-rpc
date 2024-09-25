@@ -37,7 +37,7 @@ test("auth: successful required authentication", async () => {
 
   const mockRes = new MockRes();
 
-  testServer.listen(3000, mockServer as unknown as Server);
+  testServer.listen({ port: 3000, httpServer: mockServer as unknown as Server });
 
   mockServer.emitMockHttpRequest(mockReq, mockRes);
 
